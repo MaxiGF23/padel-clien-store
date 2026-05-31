@@ -55,6 +55,11 @@ export function Layout() {
               <NavLink to="/pedidos" className="hidden hover:text-forest sm:inline">
                 Mis pedidos
               </NavLink>
+              {user?.rol === "ADMIN" && (
+                <NavLink to="/admin" className="hidden hover:text-forest sm:inline">
+                  Admin
+                </NavLink>
+              )}
               {user ? (
                 <button
                   type="button"

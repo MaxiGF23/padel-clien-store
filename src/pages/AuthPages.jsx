@@ -9,7 +9,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { status, error } = useSelector((state) => state.auth);
-  const [form, setForm] = useState({ email: "messi@example.com", password: "barcelona" });
+  const [form, setForm] = useState({ email: "admin@example.com", password: "password" });
 
   async function handleSubmit(event) {
     event.preventDefault();
