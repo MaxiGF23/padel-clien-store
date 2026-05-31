@@ -13,9 +13,21 @@ export async function getProducts(filters = {}) {
   const search = normalizeText(filters.search);
   return products
     .filter((p) => !search || normalizeText(`${p.nombreProducto} ${p.marca}`).includes(search))
-    .filter((p) => filters.category === "Todos los productos" || !filters.category || p.nombreCategoria === filters.category)
+    .filter(
+      (p) => filters.category === "Todos los productos" || !filters.category || p.nombreCategoria === filters.category
+    )
     .filter((p) => !filters.brands?.length || filters.brands.includes(p.marca))
-    .sort((a, b) => filters.sort === "price-asc" ? a.precio - b.precio : filters.sort === "price-desc" ? b.precio - a.precio : a.id - b.id);
+    .sort((a, b) =>
+      filters.sort === "price-asc"
+        ? a.precio - b.precio
+        : filters.sort === "price-desc"
+          ? b.precio - a.precio
+          : a.id - b.id
+    );
 }
-export async function getProductById(id) { return usingMocks() ? products.find((p) => p.id === Number(id)) : request(`/productos/${id}`); }
-export async function getCategories() { return usingMocks() ? categories : request("/categorias"); }
+export async function getProductById(id) {
+  return usingMocks() ? products.find((p) => p.id === Number(id)) : request(`/productos/${id}`);
+}
+export async function getCategories() {
+  return usingMocks() ? categories : request("/categorias");
+}

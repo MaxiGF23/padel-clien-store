@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import reducer, { addToCart, removeFromCart, selectCartSubtotal, selectCartTotal, updateQuantity } from "./cartSlice.js";
-const product = { id: 1, nombreProducto: "Pala Bullpadel Hack 03", marca: "Bullpadel", nombreCategoria: "Palas", visual: "🏓", precio: 32000 };
+import reducer, {
+  addToCart,
+  removeFromCart,
+  selectCartSubtotal,
+  selectCartTotal,
+  updateQuantity
+} from "./cartSlice.js";
+const product = {
+  id: 1,
+  nombreProducto: "Pala Bullpadel Hack 03",
+  marca: "Bullpadel",
+  nombreCategoria: "Palas",
+  visual: "🏓",
+  precio: 32000
+};
 describe("cartSlice", () => {
   it("adds products and recalculates quantities", () => {
     let state = reducer(undefined, addToCart({ product, quantity: 1 }));

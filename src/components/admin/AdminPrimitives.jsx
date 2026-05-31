@@ -6,7 +6,13 @@ export function AdminButton({ variant = "primary", className = "", ...props }) {
     secondary: "border border-line bg-white text-ink hover:border-forest",
     danger: "bg-red-50 text-red-700 hover:bg-red-100"
   };
-  return <button type="button" className={`focus-ring inline-flex h-8 items-center justify-center rounded px-3 text-xs font-bold transition disabled:opacity-60 ${variants[variant]} ${className}`} {...props} />;
+  return (
+    <button
+      type="button"
+      className={`focus-ring inline-flex h-8 items-center justify-center rounded px-3 text-xs font-bold transition disabled:opacity-60 ${variants[variant]} ${className}`}
+      {...props}
+    />
+  );
 }
 
 export function AdminTable({ title, children }) {

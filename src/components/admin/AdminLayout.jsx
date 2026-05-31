@@ -32,14 +32,18 @@ export function AdminLayout() {
     <div className="min-h-screen bg-[#f4f4f3] text-ink">
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-[184px] shrink-0 bg-[#214a35] px-4 py-7 text-white md:block">
-          <NavLink to="/admin" className="block text-sm font-extrabold">PadelStore</NavLink>
+          <NavLink to="/admin" className="block text-sm font-extrabold">
+            PadelStore
+          </NavLink>
           <nav className="mt-8 space-y-2">
             {navItems.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
-                className={({ isActive }) => `flex h-9 items-center gap-2 rounded px-3 text-xs font-semibold transition ${isActive ? "bg-[#4b9b61] text-white" : "text-white/80 hover:bg-white/10"}`}
+                className={({ isActive }) =>
+                  `flex h-9 items-center gap-2 rounded px-3 text-xs font-semibold transition ${isActive ? "bg-[#4b9b61] text-white" : "text-white/80 hover:bg-white/10"}`
+                }
               >
                 <Icon size={14} />
                 {label}
@@ -52,15 +56,24 @@ export function AdminLayout() {
           <header className="border-b border-line bg-white">
             <div className="flex min-h-14 items-center justify-between px-4 md:px-8">
               <div className="flex items-center gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-forest text-[10px] font-extrabold text-white">PS</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-forest text-[10px] font-extrabold text-white">
+                  PS
+                </span>
                 <span className="text-sm font-extrabold">Panel de Control</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint font-bold text-forest">
-                  {(user?.nombre?.[0] || "A")}{(user?.apellido?.[0] || "D")}
+                  {user?.nombre?.[0] || "A"}
+                  {user?.apellido?.[0] || "D"}
                 </span>
-                <span className="hidden font-semibold sm:inline">{user?.nombre || "Admin"} {user?.apellido || "User"}</span>
-                <button type="button" onClick={handleLogout} className="focus-ring inline-flex h-8 items-center gap-1 rounded border border-line bg-white px-3 font-semibold hover:border-forest">
+                <span className="hidden font-semibold sm:inline">
+                  {user?.nombre || "Admin"} {user?.apellido || "User"}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="focus-ring inline-flex h-8 items-center gap-1 rounded border border-line bg-white px-3 font-semibold hover:border-forest"
+                >
                   <LogOut size={13} />
                   <span className="hidden sm:inline">Cerrar Sesion</span>
                 </button>
@@ -69,7 +82,14 @@ export function AdminLayout() {
 
             <nav className="flex gap-1 overflow-x-auto border-t border-line px-3 py-2 md:hidden">
               {navItems.map(({ to, label, end }) => (
-                <NavLink key={to} to={to} end={end} className={({ isActive }) => `shrink-0 rounded px-3 py-2 text-xs font-semibold ${isActive ? "bg-[#214a35] text-white" : "bg-paper"}`}>
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    `shrink-0 rounded px-3 py-2 text-xs font-semibold ${isActive ? "bg-[#214a35] text-white" : "bg-paper"}`
+                  }
+                >
                   {label}
                 </NavLink>
               ))}
@@ -84,9 +104,15 @@ export function AdminLayout() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span>© 2026 PadelStore. Todos los derechos reservados.</span>
               <div className="flex gap-5">
-                <a href="#" className="hover:text-white">Terminos de Servicio</a>
-                <a href="#" className="hover:text-white">Politica de Privacidad</a>
-                <a href="#" className="hover:text-white">Contacto</a>
+                <a href="#" className="hover:text-white">
+                  Terminos de Servicio
+                </a>
+                <a href="#" className="hover:text-white">
+                  Politica de Privacidad
+                </a>
+                <a href="#" className="hover:text-white">
+                  Contacto
+                </a>
               </div>
             </div>
           </footer>

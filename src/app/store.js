@@ -6,4 +6,13 @@ import catalogReducer from "@/features/catalog/catalogSlice.js";
 import checkoutReducer from "@/features/checkout/checkoutSlice.js";
 import ordersReducer from "@/features/orders/ordersSlice.js";
 
-export const store = configureStore({ reducer: { admin: adminReducer, auth: authReducer, cart: cartReducer, catalog: catalogReducer, checkout: checkoutReducer, orders: ordersReducer } });
+export const store = configureStore({
+  reducer: {
+    admin: adminReducer,
+    auth: authReducer,
+    cart: cartReducer,
+    catalog: catalogReducer,
+    checkout: checkoutReducer,
+    orders: ordersReducer
+  }
+});

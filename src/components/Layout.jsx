@@ -111,9 +111,15 @@ export function Layout() {
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>© 2026 PadelStore · Grupo 7 · UADE</span>
             <div className="flex gap-5">
-              <a href="#" className="hover:underline">Terminos</a>
-              <a href="#" className="hover:underline">Privacidad</a>
-              <a href="#" className="hover:underline">Contacto</a>
+              <a href="#" className="hover:underline">
+                Terminos
+              </a>
+              <a href="#" className="hover:underline">
+                Privacidad
+              </a>
+              <a href="#" className="hover:underline">
+                Contacto
+              </a>
             </div>
           </div>
         </footer>

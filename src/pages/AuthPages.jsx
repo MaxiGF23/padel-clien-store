@@ -28,16 +28,19 @@ export function LoginPage() {
         </div>
 
         <Input label="Email o usuario" value={form.email} onChange={(value) => setForm({ ...form, email: value })} />
-        <Input label="Contrasena" type="password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} />
+        <Input
+          label="Contrasena"
+          type="password"
+          value={form.password}
+          onChange={(value) => setForm({ ...form, password: value })}
+        />
 
         <Link to="/registro" className="block text-right text-xs font-bold text-forest">
           Olvidaste tu contrasena?
         </Link>
 
         {status === "loading" && (
-          <p className="rounded bg-mint px-3 py-2 text-xs font-semibold text-forest">
-            Validando credenciales...
-          </p>
+          <p className="rounded bg-mint px-3 py-2 text-xs font-semibold text-forest">Validando credenciales...</p>
         )}
         {status === "failed" && (
           <p className="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
@@ -49,7 +52,10 @@ export function LoginPage() {
           {status === "loading" ? "Ingresando..." : "Ingresar"}
         </Button>
         <p className="text-center text-sm text-neutral-500">
-          No tenes cuenta? <Link className="font-bold text-forest" to="/registro">Registrate</Link>
+          No tenes cuenta?{" "}
+          <Link className="font-bold text-forest" to="/registro">
+            Registrate
+          </Link>
         </p>
       </form>
     </AuthShell>
@@ -97,14 +103,17 @@ export function RegisterPage() {
         ))}
 
         <label className="flex items-center gap-2 text-xs text-neutral-600">
-          <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="accent-forest" />
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            className="accent-forest"
+          />
           Acepto los terminos y condiciones
         </label>
 
         {status === "loading" && (
-          <p className="rounded bg-mint px-3 py-2 text-xs font-semibold text-forest">
-            Creando cuenta...
-          </p>
+          <p className="rounded bg-mint px-3 py-2 text-xs font-semibold text-forest">Creando cuenta...</p>
         )}
         {status === "failed" && (
           <p className="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
