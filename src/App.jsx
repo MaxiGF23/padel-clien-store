@@ -8,6 +8,7 @@ import { CheckoutPage } from "@/pages/CheckoutPage.jsx";
 import { HomePage } from "@/pages/HomePage.jsx";
 import { LoginPage, RegisterPage } from "@/pages/AuthPages.jsx";
 import { OrdersPage } from "@/pages/OrdersPage.jsx";
+import { OrderDetailPage } from "@/pages/OrderDetailPage.jsx";
 import { ProductDetailPage } from "@/pages/ProductDetailPage.jsx";
 import {
   AdminCategoriesPage,
@@ -39,6 +40,14 @@ export default function App() {
           element={
             <RequireAuth>
               <OrdersPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/pedidos/:id"
+          element={
+            <RequireAuth>
+              <OrderDetailPage />
             </RequireAuth>
           }
         />

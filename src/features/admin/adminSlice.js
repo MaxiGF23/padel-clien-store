@@ -122,7 +122,8 @@ const slice = createSlice({
           action.type.endsWith("/fulfilled") &&
           action.type !== fetchAdminData.fulfilled.type,
         (state) => {
-          state.saving = "succeeded";
+          state.saving = "idle";
+          state.error = null;
         }
       )
 });

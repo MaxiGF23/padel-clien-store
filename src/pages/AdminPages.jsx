@@ -20,7 +20,8 @@ import {
   saveCategory,
   saveCoupon,
   saveProduct,
-  saveUser
+  saveUser,
+  fetchAdminData
 } from "@/features/admin/adminSlice.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 
@@ -118,7 +119,7 @@ export function AdminProductsPage() {
                   </StatusBadge>
                 </Td>
                 <Td>
-                  <RowActions onEdit={() => setEditing(product)} onDelete={() => dispatch(removeProduct(product.id))} />
+                  <RowActions onEdit={() => setEditing(product)} onDelete={() => dispatch(removeProduct(product.id)).then(() => dispatch(fetchAdminData()))} />
                 </Td>
               </tr>
             ))}
@@ -131,7 +132,10 @@ export function AdminProductsPage() {
           categories={categories}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveProduct({ id: editing.id, payload })).then(() => setEditing(null))}
+          onSubmit={(payload) => dispatch(saveProduct({ id: editing.id, payload })).then(() => {
+            setEditing(null);
+            dispatch(fetchAdminData());
+          })}
         />
       )}
     </AdminPage>
@@ -185,7 +189,7 @@ export function AdminCategoriesPage() {
                 <Td>
                   <RowActions
                     onEdit={() => setEditing(category)}
-                    onDelete={() => dispatch(removeCategory(category.id))}
+                    onDelete={() => dispatch(removeCategory(category.id)).then(() => dispatch(fetchAdminData()))}
                   />
                 </Td>
               </tr>
@@ -198,7 +202,10 @@ export function AdminCategoriesPage() {
           category={editing}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveCategory({ id: editing.id, payload })).then(() => setEditing(null))}
+          onSubmit={(payload) => dispatch(saveCategory({ id: editing.id, payload })).then(() => {
+            setEditing(null);
+            dispatch(fetchAdminData());
+          })}
         />
       )}
     </AdminPage>
@@ -250,7 +257,7 @@ export function AdminCouponsPage() {
                     <StatusBadge tone={expired ? "warning" : "success"}>{expired ? "Vencido" : "Activo"}</StatusBadge>
                   </Td>
                   <Td>
-                    <AdminButton variant="danger" onClick={() => dispatch(removeCoupon(coupon.id))}>
+                    <AdminButton variant="danger" onClick={() => dispatch(removeCoupon(coupon.id)).then(() => dispatch(fetchAdminData()))}>
                       <Trash2 size={13} /> Eliminar
                     </AdminButton>
                   </Td>
@@ -264,7 +271,10 @@ export function AdminCouponsPage() {
         <CouponForm
           saving={saving}
           onClose={() => setCreating(false)}
-          onSubmit={(payload) => dispatch(saveCoupon(payload)).then(() => setCreating(false))}
+          onSubmit={(payload) => dispatch(saveCoupon(payload)).then(() => {
+            setCreating(false);
+            dispatch(fetchAdminData());
+          })}
         />
       )}
     </AdminPage>
@@ -281,8 +291,8 @@ export function AdminOrdersPage() {
       <OrdersTable
         orders={orders}
         onView={setViewing}
-        onStatus={(id, estadoPedido) => dispatch(changeOrderStatus({ id, estadoPedido }))}
-        onCancel={(id) => dispatch(cancelOrder(id))}
+        onStatus={(id, estadoPedido) => dispatch(changeOrderStatus({ id, estadoPedido })).then(() => dispatch(fetchAdminData()))}
+        onCancel={(id) => dispatch(cancelOrder(id)).then(() => dispatch(fetchAdminData()))}
       />
       {viewing && <OrderDetail order={viewing} onClose={() => setViewing(null)} />}
     </AdminPage>
@@ -327,7 +337,7 @@ export function AdminUsersPage() {
                   <select
                     className="focus-ring h-8 rounded border border-line bg-white px-2 text-xs"
                     value={user.rol}
-                    onChange={(event) => dispatch(changeUserRole({ id: user.id, rol: event.target.value }))}
+                    onChange={(event) => dispatch(changeUserRole({ id: user.id, rol: event.target.value })).then(() => dispatch(fetchAdminData()))}
                   >
                     {roleOptions.map((role) => (
                       <option key={role}>{role}</option>
@@ -336,7 +346,7 @@ export function AdminUsersPage() {
                 </Td>
                 <Td>{formatDate(user.createdAt)}</Td>
                 <Td>
-                  <RowActions onEdit={() => setEditing(user)} onDelete={() => dispatch(removeUser(user.id))} />
+                  <RowActions onEdit={() => setEditing(user)} onDelete={() => dispatch(removeUser(user.id)).then(() => dispatch(fetchAdminData()))} />
                 </Td>
               </tr>
             ))}
@@ -348,7 +358,10 @@ export function AdminUsersPage() {
           user={editing}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveUser({ id: editing.id, payload })).then(() => setEditing(null))}
+          onSubmit={(payload) => dispatch(saveUser({ id: editing.id, payload })).then(() => {
+            setEditing(null);
+            dispatch(fetchAdminData());
+          })}
         />
       )}
     </AdminPage>
