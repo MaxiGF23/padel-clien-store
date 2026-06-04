@@ -10,6 +10,7 @@ import { HomePage } from "@/pages/HomePage.jsx";
 import { LoginPage, RegisterPage } from "@/pages/AuthPages.jsx";
 import { OrdersPage } from "@/pages/OrdersPage.jsx";
 import { OrderDetailPage } from "@/pages/OrderDetailPage.jsx";
+import { NotFoundPage } from "@/pages/NotFoundPage.jsx";
 import { ProductDetailPage } from "@/pages/ProductDetailPage.jsx";
 import {
   AdminCategoriesPage,
@@ -54,6 +55,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route
           path="/admin"
@@ -69,6 +71,7 @@ export default function App() {
           <Route path="cupones" element={<AdminCouponsPage />} />
           <Route path="pedidos" element={<AdminOrdersPage />} />
           <Route path="usuarios" element={<AdminUsersPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </>
