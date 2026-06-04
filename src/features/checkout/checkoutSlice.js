@@ -30,9 +30,10 @@ export const submitCheckout = createAsyncThunk("checkout/submitCheckout", (_, { 
   const state = getState();
   return checkoutWithCard({
     idCarrito: state.cart.id,
-    idUsuario: state.auth.user?.id,
+    idUsuario: state.auth?.user?.id,
     idDireccion: 1,
     metodoEnvio: state.checkout.shippingMethod,
+    metodoPago: state.checkout.paymentMethod,
     observaciones: state.checkout.address.referencia,
     codigoCupon: state.cart.couponCode,
     descuentoAplicado: state.cart.discount,

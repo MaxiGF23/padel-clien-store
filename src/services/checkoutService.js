@@ -6,10 +6,26 @@ export async function checkoutWithCard(payload) {
     return request("/pagos/pasarela-ficticia/checkout", { method: "POST", body: JSON.stringify(payload) });
   }
 
+  // Mock: simulate the fake payment gateway latency
+  await new Promise((resolve) => setTimeout(resolve, 1800));
+
+  // Mock: gateway-side validation (only card payments go through the gateway)
+  if (!payload.metodoPago || payload.metodoPago === "TARJETA_CREDITO") {
+    if (!/^\d{16}$/.test(payload.numeroTarjeta || "")) {
+      throw new Error("Pago rechazado: numero de tarjeta invalido (deben ser 16 digitos)");
+    }
+    if (!/^\d{3,4}$/.test(payload.cvv || "")) {
+      throw new Error("Pago rechazado: CVV invalido");
+    }
+    if (!payload.titularTarjeta?.trim()) {
+      throw new Error("Pago rechazado: falta el titular de la tarjeta");
+    }
+  }
+
   // Mock: Create and save order
   const pedidoId = Math.floor(10000 + Math.random() * 90000);
   const mockData = adminService.getMockData();
-  
+
   const newOrder = {
     id: pedidoId,
     idUsuario: payload.idUsuario,
