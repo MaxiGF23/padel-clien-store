@@ -155,3 +155,14 @@ export async function deleteUser(id) {
   mockUsers = mockUsers.map((item) => (item.id === Number(id) ? { ...item, activo: false } : item));
   return null;
 }
+
+// Getters para sincronizar datos entre admin y catalog
+export function getMockData() {
+  return {
+    products: mockProducts,
+    categories: mockCategories,
+    coupons: mockCoupons,
+    orders: mockOrders,
+    users: mockUsers
+  };
+}

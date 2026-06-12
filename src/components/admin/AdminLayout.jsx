@@ -1,6 +1,6 @@
-import { BarChart3, Boxes, FolderTree, LogOut, PackageCheck, Tags, Users } from "lucide-react";
+import { BarChart3, Boxes, FolderTree, LogOut, PackageCheck, Tags, Users, Home } from "lucide-react";
 import { useEffect } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice.js";
 import { fetchAdminData } from "@/features/admin/adminSlice.js";
@@ -32,7 +32,7 @@ export function AdminLayout() {
     <div className="min-h-screen bg-[#f4f4f3] text-ink">
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-[184px] shrink-0 bg-[#214a35] px-4 py-7 text-white md:block">
-          <NavLink to="/admin" className="block text-sm font-extrabold">
+          <NavLink to="/" className="block text-sm font-extrabold hover:opacity-80 transition">
             PadelStore
           </NavLink>
           <nav className="mt-8 space-y-2">
@@ -55,6 +55,12 @@ export function AdminLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="border-b border-line bg-white">
             <div className="flex min-h-14 items-center justify-between px-4 md:px-8">
+              <div className="flex items-center gap-3">
+                <Link to="/" className="flex items-center gap-2 rounded px-2 py-1 hover:bg-paper transition">
+                  <Home size={16} className="text-forest" />
+                  <span className="hidden text-xs font-semibold text-forest sm:inline">Volver al Home</span>
+                </Link>
+              </div>
               <div className="flex items-center gap-3">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-forest text-[10px] font-extrabold text-white">
                   PS

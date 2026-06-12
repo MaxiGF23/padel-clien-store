@@ -4,7 +4,8 @@ import {
   selectCartSubtotal,
   selectCartTotal,
   setCouponCode,
-  updateQuantity
+  updateQuantity,
+  validateCoupon
 } from "@/features/cart/cartSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
@@ -16,6 +17,10 @@ export function CartPage() {
     cart = useSelector((s) => s.cart),
     subtotal = useSelector(selectCartSubtotal),
     total = useSelector(selectCartTotal);
+
+  const handleApplyCoupon = async () => {
+    await dispatch(validateCoupon(cart.couponCode));
+  };
   return (
     <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
       <h1 className="text-3xl font-extrabold">Mi carrito</h1>
@@ -66,8 +71,16 @@ export function CartPage() {
               onChange={(e) => dispatch(setCouponCode(e.target.value))}
               placeholder="Codigo de cupon"
             />
-            <Button variant="secondary">Aplicar</Button>
+            <Button variant="secondary" onClick={handleApplyCoupon}>
+              Aplicar
+            </Button>
           </div>
+          {cart.couponError && (
+            <p className="mt-2 text-xs font-semibold text-red-600">{cart.couponError}</p>
+          )}
+          {cart.discount > 0 && (
+            <p className="mt-2 text-xs font-semibold text-forest">Cupón aplicado: {cart.couponCode}</p>
+          )}
           <Button
             to="/checkout"
             className={`mt-5 w-full ${cart.detalles.length === 0 ? "pointer-events-none opacity-60" : ""}`}

@@ -7,9 +7,16 @@ const brands = ["Bullpadel", "Head", "Dunlop", "Wilson", "Adidas"];
 export function HomePage() {
   const dispatch = useDispatch();
   const { products, categories, filters, status } = useSelector((s) => s.catalog);
+  
+  // Refetch al montar para sincronizar con cambios del admin
   useEffect(() => {
     dispatch(fetchCatalog());
-  }, [dispatch, filters]);
+  }, [dispatch]);
+  
+  // Refetch cuando cambian los filtros
+  useEffect(() => {
+    dispatch(fetchCatalog());
+  }, [dispatch, filters.category, filters.brands, filters.sort, filters.search]);
   return (
     <>
       <section className="bg-forest px-6 py-14 text-center text-white">

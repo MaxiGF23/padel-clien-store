@@ -1,7 +1,9 @@
-import { orders } from "@/data/mockData.js";
 import { request, usingMocks } from "./apiClient.js";
+import * as adminService from "./adminService.js";
+
 export async function getOrdersByUser(idUsuario) {
-  return usingMocks()
-    ? orders.filter((o) => o.idUsuario === Number(idUsuario))
-    : request(`/pedidos/usuario/${idUsuario}`);
+  if (!usingMocks()) {
+    return request(`/pedidos/usuario/${idUsuario}`);
+  }
+  return adminService.getMockData().orders.filter((o) => o.idUsuario === Number(idUsuario));
 }

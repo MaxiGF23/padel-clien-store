@@ -40,7 +40,7 @@ export function OrdersPage() {
             </div>
             <div className="text-left sm:text-right">
               <p className="text-xl font-extrabold text-forest">{formatMoney(order.total)}</p>
-              <Button variant="secondary" className="mt-3 h-8 text-xs">
+              <Button to={`/pedidos/${order.id}`} variant="secondary" className="mt-3 h-8 text-xs">
                 Ver detalle
               </Button>
             </div>

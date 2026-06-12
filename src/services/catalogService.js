@@ -1,6 +1,7 @@
-import { categories, products } from "@/data/mockData.js";
+import { categories as mockDataCategories, products as mockDataProducts } from "@/data/mockData.js";
 import { normalizeText } from "@/utils/formatters.js";
 import { request, usingMocks } from "./apiClient.js";
+import * as adminService from "./adminService.js";
 
 export async function getProducts(filters = {}) {
   if (!usingMocks()) {
@@ -10,6 +11,8 @@ export async function getProducts(filters = {}) {
     const query = params.toString();
     return request(`/productos${query ? `?${query}` : ""}`);
   }
+  const mockData = adminService.getMockData();
+  const products = mockData.products;
   const search = normalizeText(filters.search);
   return products
     .filter((p) => !search || normalizeText(`${p.nombreProducto} ${p.marca}`).includes(search))
@@ -26,8 +29,12 @@ export async function getProducts(filters = {}) {
     );
 }
 export async function getProductById(id) {
-  return usingMocks() ? products.find((p) => p.id === Number(id)) : request(`/productos/${id}`);
+  if (!usingMocks()) return request(`/productos/${id}`);
+  const mockData = adminService.getMockData();
+  return mockData.products.find((p) => p.id === Number(id));
 }
 export async function getCategories() {
-  return usingMocks() ? categories : request("/categorias");
+  if (!usingMocks()) return request("/categorias");
+  const mockData = adminService.getMockData();
+  return mockData.categories;
 }

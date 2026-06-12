@@ -5,6 +5,7 @@ import cartReducer from "@/features/cart/cartSlice.js";
 import catalogReducer from "@/features/catalog/catalogSlice.js";
 import checkoutReducer from "@/features/checkout/checkoutSlice.js";
 import ordersReducer from "@/features/orders/ordersSlice.js";
+import toastReducer from "@/features/ui/toastSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     cart: cartReducer,
     catalog: catalogReducer,
     checkout: checkoutReducer,
-    orders: ordersReducer
+    orders: ordersReducer,
+    toasts: toastReducer
   }
 });

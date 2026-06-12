@@ -30,10 +30,14 @@ export const submitCheckout = createAsyncThunk("checkout/submitCheckout", (_, { 
   const state = getState();
   return checkoutWithCard({
     idCarrito: state.cart.id,
+    idUsuario: state.auth?.user?.id,
     idDireccion: 1,
     metodoEnvio: state.checkout.shippingMethod,
+    metodoPago: state.checkout.paymentMethod,
     observaciones: state.checkout.address.referencia,
     codigoCupon: state.cart.couponCode,
+    descuentoAplicado: state.cart.discount,
+    detalles: state.cart.detalles,
     numeroTarjeta: state.checkout.card.numeroTarjeta.replace(/\s/g, ""),
     titularTarjeta: state.checkout.card.titularTarjeta,
     vencimiento: state.checkout.card.vencimiento,
@@ -56,6 +60,9 @@ const slice = createSlice({
     },
     updateCard: (s, a) => {
       s.card = { ...s.card, ...a.payload };
+    },
+    resetCheckout: (s) => {
+      Object.assign(s, initialState);
     }
   },
   extraReducers: (b) =>
@@ -72,5 +79,5 @@ const slice = createSlice({
         s.error = a.error.message;
       })
 });
-export const { updateAddress, setShippingMethod, setPaymentMethod, updateCard } = slice.actions;
+export const { updateAddress, setShippingMethod, setPaymentMethod, updateCard, resetCheckout } = slice.actions;
 export default slice.reducer;

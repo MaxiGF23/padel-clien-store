@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, registerUser } from "@/features/auth/authSlice.js";
+import { showToast } from "@/features/ui/toastSlice.js";
 import { Button } from "@/components/Button.jsx";
 
 export function LoginPage() {
@@ -80,7 +81,10 @@ export function RegisterPage() {
     event.preventDefault();
     const result = await dispatch(registerUser(form));
     if (registerUser.fulfilled.match(result)) {
-      navigate("/login");
+      dispatch(
+        showToast({ type: "success", message: `Cuenta creada con exito. Bienvenido, ${result.payload.nombre}!` })
+      );
+      navigate("/");
     }
   }
 
