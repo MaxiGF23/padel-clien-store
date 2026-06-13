@@ -12,6 +12,7 @@ import { OrdersPage } from "@/pages/OrdersPage.jsx";
 import { OrderDetailPage } from "@/pages/OrderDetailPage.jsx";
 import { NotFoundPage } from "@/pages/NotFoundPage.jsx";
 import { ProductDetailPage } from "@/pages/ProductDetailPage.jsx";
+import { ProductosBackendPage } from "@/pages/ProductosBackendPage.jsx";
 import {
   AdminCategoriesPage,
   AdminCouponsPage,
@@ -27,6 +28,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="/productos-backend" element={<ProductosBackendPage />} />
           <Route path="/productos/:id" element={<ProductDetailPage />} />
           <Route path="/carrito" element={<CartPage />} />
           <Route

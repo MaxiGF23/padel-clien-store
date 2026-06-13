@@ -1,4 +1,3 @@
-import { currentUser } from "@/data/mockData.js";
 import { request, usingMocks } from "./apiClient.js";
 import * as adminService from "./adminService.js";
 

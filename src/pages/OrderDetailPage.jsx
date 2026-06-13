@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
@@ -20,7 +20,6 @@ const statusLabels = {
 
 export function OrderDetailPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { items } = useSelector((s) => s.orders);
 
   const order = items.find((o) => o.id === Number(id));

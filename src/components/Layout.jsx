@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice.js";
-import { selectCartCount } from "@/features/cart/cartSlice.js";
+import { clearCart, loadCart, selectCartCount } from "@/features/cart/cartSlice.js";
 import { setSearch } from "@/features/catalog/catalogSlice.js";
 
 export function Layout() {
@@ -12,6 +12,7 @@ export function Layout() {
   const cartCount = useSelector(selectCartCount);
   const search = useSelector((state) => state.catalog.filters.search);
   const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
   const [authNotice, setAuthNotice] = useState("");
 
   useEffect(() => {
@@ -20,6 +21,11 @@ export function Layout() {
     return () => window.clearTimeout(timeout);
   }, [authNotice]);
 
+  // Hidrata el carrito server-side al iniciar sesión (no-op en modo mock o sin token).
+  useEffect(() => {
+    dispatch(loadCart());
+  }, [dispatch, token]);
+
   function handleSearch(value) {
     dispatch(setSearch(value));
     navigate("/");
@@ -27,6 +33,7 @@ export function Layout() {
 
   function handleLogout() {
     dispatch(logout());
+    dispatch(clearCart());
     setAuthNotice("Sesion cerrada correctamente");
     navigate("/");
   }

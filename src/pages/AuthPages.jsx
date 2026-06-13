@@ -81,10 +81,18 @@ export function RegisterPage() {
     event.preventDefault();
     const result = await dispatch(registerUser(form));
     if (registerUser.fulfilled.match(result)) {
-      dispatch(
-        showToast({ type: "success", message: `Cuenta creada con exito. Bienvenido, ${result.payload.nombre}!` })
-      );
-      navigate("/");
+      // El registro no devuelve token: iniciamos sesión automáticamente para obtenerlo
+      // (sin token, el carrito y el checkout no pueden operar contra el backend).
+      const loginResult = await dispatch(loginUser({ email: form.email, password: form.password }));
+      if (loginUser.fulfilled.match(loginResult)) {
+        dispatch(
+          showToast({ type: "success", message: `Cuenta creada con exito. Bienvenido, ${result.payload.nombre}!` })
+        );
+        navigate("/");
+      } else {
+        dispatch(showToast({ type: "success", message: "Cuenta creada. Inicia sesion para continuar." }));
+        navigate("/login");
+      }
     }
   }
 

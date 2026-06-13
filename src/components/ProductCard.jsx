@@ -1,15 +1,19 @@
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addToCart } from "@/features/cart/cartSlice.js";
+import { addItemToCart } from "@/features/cart/cartSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "./Button.jsx";
 import { ProductVisual } from "./ProductVisual.jsx";
 export function ProductCard({ product }) {
   const dispatch = useDispatch();
-  function handleAddToCart() {
-    dispatch(addToCart({ product, quantity: 1 }));
-    dispatch(showToast({ type: "success", message: `${product.nombreProducto} agregado al carrito` }));
+  async function handleAddToCart() {
+    try {
+      await dispatch(addItemToCart({ product, quantity: 1 })).unwrap();
+      dispatch(showToast({ type: "success", message: `${product.nombreProducto} agregado al carrito` }));
+    } catch (err) {
+      dispatch(showToast({ type: "error", message: err.message || "No se pudo agregar al carrito" }));
+    }
   }
   return (
     <article className="overflow-hidden rounded border border-line bg-white">

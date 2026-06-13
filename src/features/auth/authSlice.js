@@ -45,9 +45,10 @@ const slice = createSlice({
         s.status = "loading";
         s.error = null;
       })
-      .addCase(registerUser.fulfilled, (s, a) => {
+      .addCase(registerUser.fulfilled, (s) => {
+        // El registro NO inicia sesión por sí solo (no devuelve token). El login
+        // automático que dispara RegisterPage es el que establece user + token.
         s.status = "registered";
-        s.user = a.payload;
       })
       .addCase(registerUser.rejected, (s, a) => {
         s.status = "failed";

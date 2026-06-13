@@ -1,7 +1,6 @@
 import { Check, CreditCard, Info, Landmark, Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
 import { clearCart, selectCartSubtotal, selectCartTotal, setShippingCost } from "@/features/cart/cartSlice.js";
 import {
   setPaymentMethod,
@@ -26,6 +25,41 @@ const paymentOptions = [
   { id: "TRANSFERENCIA", label: "Transferencia", icon: Landmark },
   { id: "EFECTIVO", label: "Efectivo", icon: Wallet }
 ];
+// Algoritmo de Luhn: el backend (pasarela ficticia) rechaza tarjetas que no lo
+// cumplen, así que lo validamos también en el front para avisar al instante.
+function pasaLuhn(numero) {
+  let suma = 0;
+  let duplicar = false;
+  for (let i = numero.length - 1; i >= 0; i--) {
+    let digito = numero.charCodeAt(i) - 48;
+    if (duplicar) {
+      digito *= 2;
+      if (digito > 9) digito -= 9;
+    }
+    suma += digito;
+    duplicar = !duplicar;
+  }
+  return suma % 10 === 0;
+}
+// Validación por campo de la tarjeta: se evalúa en tiempo real mientras el usuario
+// escribe. Devuelve el mensaje de error o null si el valor (no vacío) es válido.
+function cardFieldError(field, value) {
+  const v = (value || "").trim();
+  if (v === "") return null;
+  if (field === "numeroTarjeta") {
+    const digits = v.replace(/\s/g, "");
+    if (!/^\d{16}$/.test(digits)) return "El número debe tener 16 dígitos";
+    if (!pasaLuhn(digits)) return "Número de tarjeta inválido";
+    return null;
+  }
+  if (field === "vencimiento") {
+    return /^\d{2}\/\d{2}$/.test(v) ? null : "Formato MM/AA";
+  }
+  if (field === "cvv") {
+    return /^\d{3,4}$/.test(v) ? null : "El CVV debe tener 3 o 4 dígitos";
+  }
+  return null; // titularTarjeta: sin validación de longitud
+}
 export function CheckoutPage() {
   const dispatch = useDispatch(),
     navigate = useNavigate(),
@@ -36,16 +70,12 @@ export function CheckoutPage() {
 
   const isOrderConfirmed = checkout.result?.aprobado;
 
-  useEffect(() => {
-    if (isOrderConfirmed) {
-      const timer = setTimeout(() => {
-        dispatch(clearCart());
-        dispatch(resetCheckout());
-        navigate("/pedidos");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOrderConfirmed, dispatch, navigate]);
+  // Limpia el carrito y el checkout al salir de la pantalla de confirmación.
+  function leaveConfirmation(to) {
+    dispatch(clearCart());
+    dispatch(resetCheckout());
+    navigate(to);
+  }
 
   function validateForm() {
     const errors = [];
@@ -73,6 +103,9 @@ export function CheckoutPage() {
     const result = await dispatch(submitCheckout());
     if (submitCheckout.rejected.match(result)) {
       dispatch(showToast({ type: "error", message: result.error.message || "No pudimos procesar el pago" }));
+    } else if (!result.payload.aprobado) {
+      // La pasarela respondió 200 pero rechazó el pago (ej. tarjeta inválida por Luhn).
+      dispatch(showToast({ type: "error", message: result.payload.mensaje || "El pago fue rechazado" }));
     } else {
       dispatch(showToast({ type: "success", message: `Pago aprobado · Pedido #${result.payload.pedidoId}` }));
     }
@@ -112,8 +145,8 @@ export function CheckoutPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button to="/">Volver al inicio</Button>
-            <Button to="/pedidos" variant="secondary">
+            <Button onClick={() => leaveConfirmation("/")}>Volver al inicio</Button>
+            <Button variant="secondary" onClick={() => leaveConfirmation("/pedidos")}>
               Ver mis pedidos
             </Button>
           </div>
@@ -193,16 +226,20 @@ export function CheckoutPage() {
                 </div>
                 {checkout.paymentMethod === "TARJETA_CREDITO" && (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {["numeroTarjeta", "titularTarjeta", "vencimiento", "cvv"].map((field) => (
-                      <label key={field}>
-                        <span className="mb-1 block text-xs font-semibold text-neutral-500">{field}</span>
-                        <input
-                          className="focus-ring h-10 w-full rounded border border-line px-3 text-sm"
-                          value={checkout.card[field]}
-                          onChange={(e) => dispatch(updateCard({ [field]: e.target.value }))}
-                        />
-                      </label>
-                    ))}
+                    {["numeroTarjeta", "titularTarjeta", "vencimiento", "cvv"].map((field) => {
+                      const error = cardFieldError(field, checkout.card[field]);
+                      return (
+                        <label key={field}>
+                          <span className="mb-1 block text-xs font-semibold text-neutral-500">{field}</span>
+                          <input
+                            className={`focus-ring h-10 w-full rounded border px-3 text-sm ${error ? "border-red-400" : "border-line"}`}
+                            value={checkout.card[field]}
+                            onChange={(e) => dispatch(updateCard({ [field]: e.target.value }))}
+                          />
+                          {error && <span className="mt-1 block text-xs font-semibold text-red-600">{error}</span>}
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
                 {checkout.paymentMethod === "TRANSFERENCIA" && (

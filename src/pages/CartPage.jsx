@@ -1,10 +1,10 @@
 import { useDispatch, useSelector } from "react-redux";
 import {
-  removeFromCart,
+  changeQuantity,
+  removeItem,
   selectCartSubtotal,
   selectCartTotal,
   setCouponCode,
-  updateQuantity,
   validateCoupon
 } from "@/features/cart/cartSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
@@ -44,14 +44,14 @@ export function CartPage() {
                   <h2 className="font-bold">{item.nombreProducto}</h2>
                   <button
                     className="mt-1 text-xs font-semibold text-red-600"
-                    onClick={() => dispatch(removeFromCart(item.idProducto))}
+                    onClick={() => dispatch(removeItem(item.idProducto))}
                   >
                     Eliminar
                   </button>
                 </div>
                 <QuantityStepper
                   value={item.cantidad}
-                  onChange={(quantity) => dispatch(updateQuantity({ idProducto: item.idProducto, quantity }))}
+                  onChange={(quantity) => dispatch(changeQuantity({ idProducto: item.idProducto, quantity }))}
                 />
                 <div className="text-right">
                   <p className="text-xs text-neutral-500">Subtotal</p>

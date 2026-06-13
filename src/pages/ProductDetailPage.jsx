@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart } from "@/features/cart/cartSlice.js";
+import { addItemToCart } from "@/features/cart/cartSlice.js";
 import { fetchProduct } from "@/features/catalog/catalogSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
@@ -30,13 +30,18 @@ export function ProductDetailPage() {
   // Mock gallery: the product visual plus alternate views
   const gallery = [product.visual || "🏓", "🟡", "📐", "🎯"];
   const goTo = (index) => setActiveImage((index + gallery.length) % gallery.length);
-  function handleAddToCart() {
-    dispatch(addToCart({ product, quantity }));
-    dispatch(showToast({ type: "success", message: `${product.nombreProducto} agregado al carrito` }));
+  async function handleAddToCart() {
+    try {
+      await dispatch(addItemToCart({ product, quantity })).unwrap();
+      dispatch(showToast({ type: "success", message: `${product.nombreProducto} agregado al carrito` }));
+      return true;
+    } catch (err) {
+      dispatch(showToast({ type: "error", message: err.message || "No se pudo agregar al carrito" }));
+      return false;
+    }
   }
-  function handleBuyNow() {
-    handleAddToCart();
-    navigate("/carrito");
+  async function handleBuyNow() {
+    if (await handleAddToCart()) navigate("/carrito");
   }
   return (
     <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
