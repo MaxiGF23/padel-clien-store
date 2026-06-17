@@ -17,6 +17,7 @@ export function ProductDetailPage() {
     dispatch = useDispatch(),
     navigate = useNavigate();
   const product = useSelector((s) => s.catalog.selectedProduct);
+  const isAdmin = useSelector((s) => s.auth.user?.rol === "ADMIN");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [prevId, setPrevId] = useState(id);
@@ -108,16 +109,20 @@ export function ProductDetailPage() {
           <p className="mt-1 text-xs text-neutral-500">Hasta 6 cuotas sin interes con tarjeta de credito</p>
           <h2 className="mt-8 text-sm font-bold">Descripcion</h2>
           <p className="mt-2 text-sm leading-6 text-neutral-600">{product.descripcion}</p>
-          <div className="mt-6 flex items-center gap-4">
-            <span className="text-sm font-semibold">Cantidad</span>
-            <QuantityStepper value={quantity} onChange={setQuantity} />
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button onClick={handleAddToCart}>Agregar al carrito</Button>
-            <Button variant="secondary" onClick={handleBuyNow}>
-              Comprar ahora
-            </Button>
-          </div>
+          {!isAdmin && (
+            <>
+              <div className="mt-6 flex items-center gap-4">
+                <span className="text-sm font-semibold">Cantidad</span>
+                <QuantityStepper value={quantity} onChange={setQuantity} />
+              </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <Button onClick={handleAddToCart}>Agregar al carrito</Button>
+                <Button variant="secondary" onClick={handleBuyNow}>
+                  Comprar ahora
+                </Button>
+              </div>
+            </>
+          )}
           <h2 className="mb-4 mt-8 text-sm font-bold">Caracteristicas</h2>
           <dl className="grid grid-cols-2 gap-y-2 text-sm">
             {Object.entries(product.atributos || {}).map(([k, v]) => (

@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout.jsx";
 import { Toaster } from "@/components/Toaster.jsx";
 import { RequireAdmin } from "@/components/RequireAdmin.jsx";
 import { RequireAuth } from "@/components/RequireAuth.jsx";
+import { RequireCustomer } from "@/components/RequireCustomer.jsx";
 import { CartPage } from "@/pages/CartPage.jsx";
 import { CheckoutPage } from "@/pages/CheckoutPage.jsx";
 import { HomePage } from "@/pages/HomePage.jsx";
@@ -30,12 +31,21 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="/productos-backend" element={<ProductosBackendPage />} />
           <Route path="/productos/:id" element={<ProductDetailPage />} />
-          <Route path="/carrito" element={<CartPage />} />
+          <Route
+            path="/carrito"
+            element={
+              <RequireCustomer>
+                <CartPage />
+              </RequireCustomer>
+            }
+          />
           <Route
             path="/checkout"
             element={
               <RequireAuth>
-                <CheckoutPage />
+                <RequireCustomer>
+                  <CheckoutPage />
+                </RequireCustomer>
               </RequireAuth>
             }
           />

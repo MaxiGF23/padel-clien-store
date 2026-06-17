@@ -13,6 +13,7 @@ export function Layout() {
   const search = useSelector((state) => state.catalog.filters.search);
   const user = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
+  const isAdmin = user?.rol === "ADMIN";
   const [authNotice, setAuthNotice] = useState("");
 
   useEffect(() => {
@@ -59,10 +60,12 @@ export function Layout() {
             </label>
 
             <nav className="flex items-center justify-end gap-3 text-xs font-semibold sm:gap-4">
-              <NavLink to="/pedidos" className="hidden hover:text-forest sm:inline">
-                Mis pedidos
-              </NavLink>
-              {user?.rol === "ADMIN" && (
+              {!isAdmin && (
+                <NavLink to="/pedidos" className="hidden hover:text-forest sm:inline">
+                  Mis pedidos
+                </NavLink>
+              )}
+              {isAdmin && (
                 <NavLink to="/admin" className="hidden hover:text-forest sm:inline">
                   Admin
                 </NavLink>
@@ -82,12 +85,14 @@ export function Layout() {
                 </NavLink>
               )}
               <CircleUserRound size={18} className="hidden text-neutral-500 sm:block" />
-              <NavLink to="/carrito" className="relative rounded p-1 hover:bg-paper" aria-label="Carrito">
-                <ShoppingCart size={18} />
-                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-forest px-1 text-[10px] text-white">
-                  {cartCount}
-                </span>
-              </NavLink>
+              {!isAdmin && (
+                <NavLink to="/carrito" className="relative rounded p-1 hover:bg-paper" aria-label="Carrito">
+                  <ShoppingCart size={18} />
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-forest px-1 text-[10px] text-white">
+                    {cartCount}
+                  </span>
+                </NavLink>
+              )}
             </nav>
           </div>
 
