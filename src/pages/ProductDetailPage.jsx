@@ -9,6 +9,9 @@ import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
 import { QuantityStepper } from "@/components/QuantityStepper.jsx";
+import { Card } from "@/components/ui/Card.jsx";
+import { Container } from "@/components/ui/Container.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 export function ProductDetailPage() {
   const { id } = useParams(),
     dispatch = useDispatch(),
@@ -44,13 +47,13 @@ export function ProductDetailPage() {
     if (await handleAddToCart()) navigate("/carrito");
   }
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
+    <Container>
       <div className="mb-5 text-xs text-neutral-500">
         <Link to="/">Inicio</Link> · {product.nombreCategoria} · <b>{product.nombreProducto}</b>
       </div>
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <div className="relative rounded border border-line bg-white p-6">
+          <Card className="relative p-6">
             <ProductVisual product={{ ...product, visual: gallery[activeImage] }} size="lg" />
             <button
               type="button"
@@ -76,7 +79,7 @@ export function ProductDetailPage() {
                 />
               ))}
             </div>
-          </div>
+          </Card>
           <div className="mt-4 grid grid-cols-4 gap-3 sm:w-80">
             {gallery.map((visual, i) => (
               <button
@@ -95,7 +98,9 @@ export function ProductDetailPage() {
           <p className="text-xs font-bold uppercase text-neutral-500">
             {product.marca} · {product.nombreCategoria}
           </p>
-          <h1 className="mt-2 text-3xl font-extrabold">{product.nombreProducto}</h1>
+          <Text variant="title" className="mt-2">
+            {product.nombreProducto}
+          </Text>
           <p className="mt-3 inline-flex rounded bg-mint px-2 py-1 text-xs font-bold text-forest">
             En stock · {product.stock} disponibles
           </p>
@@ -124,6 +129,6 @@ export function ProductDetailPage() {
           </dl>
         </div>
       </div>
-    </section>
+    </Container>
   );
 }

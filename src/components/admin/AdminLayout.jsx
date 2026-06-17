@@ -29,9 +29,9 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f4f3] text-ink">
+    <div className="min-h-screen bg-fog text-ink">
       <div className="flex min-h-screen w-full">
-        <aside className="hidden w-[184px] shrink-0 bg-[#214a35] px-4 py-7 text-white md:block">
+        <aside className="hidden w-[184px] shrink-0 bg-forest-deep px-4 py-7 text-white md:block">
           <NavLink to="/" className="block text-sm font-extrabold hover:opacity-80 transition">
             PadelStore
           </NavLink>
@@ -42,7 +42,7 @@ export function AdminLayout() {
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex h-9 items-center gap-2 rounded px-3 text-xs font-semibold transition ${isActive ? "bg-[#4b9b61] text-white" : "text-white/80 hover:bg-white/10"}`
+                  `flex h-9 items-center gap-2 rounded px-3 text-xs font-semibold transition ${isActive ? "bg-forest-bright text-white" : "text-white/80 hover:bg-white/10"}`
                 }
               >
                 <Icon size={14} />
@@ -93,7 +93,7 @@ export function AdminLayout() {
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `shrink-0 rounded px-3 py-2 text-xs font-semibold ${isActive ? "bg-[#214a35] text-white" : "bg-paper"}`
+                    `shrink-0 rounded px-3 py-2 text-xs font-semibold ${isActive ? "bg-forest-deep text-white" : "bg-paper"}`
                   }
                 >
                   {label}

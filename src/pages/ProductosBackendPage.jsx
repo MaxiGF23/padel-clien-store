@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getProductos } from "@/services/productosService.js";
+import { Alert } from "@/components/ui/Alert.jsx";
+import { Card } from "@/components/ui/Card.jsx";
 
 // Página demo de integración Front-Back:
 // realiza una petición asincrónica al backend con fetch dentro de useEffect,
@@ -31,7 +33,9 @@ export function ProductosBackendPage() {
       {cargando && <p>Cargando productos...</p>}
 
       {error && (
-        <p className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>
+        <Alert tone="error" size="md">
+          {error}
+        </Alert>
       )}
 
       {!cargando && !error && productos.length === 0 && (
@@ -39,7 +43,7 @@ export function ProductosBackendPage() {
       )}
 
       {!cargando && !error && productos.length > 0 && (
-        <ul className="divide-y divide-line rounded border border-line bg-white">
+        <Card as="ul" className="divide-y divide-line">
           {productos.map((p) => (
             <li key={p.id} className="flex items-center justify-between px-4 py-3">
               <div>
@@ -53,7 +57,7 @@ export function ProductosBackendPage() {
               </span>
             </li>
           ))}
-        </ul>
+        </Card>
       )}
     </section>
   );

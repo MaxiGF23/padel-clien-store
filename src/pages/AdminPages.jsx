@@ -1,14 +1,8 @@
 import { Edit, Eye, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  AdminButton,
-  AdminModal,
-  AdminTable,
-  Field,
-  StatusBadge,
-  inputClass
-} from "@/components/admin/AdminPrimitives.jsx";
+import { AdminButton, AdminModal, AdminTable, Field, StatusBadge } from "@/components/admin/AdminPrimitives.jsx";
+import { inputClass } from "@/components/ui/Input.jsx";
 import {
   cancelOrder,
   changeOrderStatus,
@@ -24,23 +18,12 @@ import {
   fetchAdminData
 } from "@/features/admin/adminSlice.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
+import { orderStatusTone } from "@/features/orders/statusConfig.js";
+import { Alert } from "@/components/ui/Alert.jsx";
+import { Card } from "@/components/ui/Card.jsx";
 
 const orderStatuses = ["PENDIENTE", "CONFIRMADO", "EN_PROCESO", "ENVIADO", "ENTREGADO", "CANCELADO"];
 const roleOptions = ["USER", "ADMIN"];
-
-const statusTone = {
-  ACTIVO: "success",
-  BAJO: "warning",
-  VENCIDO: "warning",
-  PENDIENTE: "warning",
-  CONFIRMADO: "success",
-  EN_PROCESO: "info",
-  ENVIADO: "info",
-  ENTREGADO: "success",
-  CANCELADO: "danger",
-  USER: "neutral",
-  ADMIN: "info"
-};
 
 export function AdminDashboardPage() {
   const { products, orders, users } = useSelector((state) => state.admin);
@@ -65,11 +48,11 @@ export function AdminDashboardPage() {
     <AdminPage title="Dashboard">
       <div className="grid gap-5 md:grid-cols-4">
         {metrics.map((metric) => (
-          <article key={metric.label} className="rounded border border-line bg-white p-5">
+          <Card as="article" key={metric.label} className="p-5">
             <p className="text-[11px] font-extrabold uppercase text-neutral-500">{metric.label}</p>
             <p className="mt-2 text-3xl font-extrabold">{metric.value}</p>
             <p className="mt-1 text-xs font-semibold text-emerald-700">{metric.hint}</p>
-          </article>
+          </Card>
         ))}
       </div>
 
@@ -377,9 +360,15 @@ function AdminPage({ title, action, children }) {
         {action}
       </div>
       {status === "loading" && (
-        <p className="rounded border border-line bg-white px-4 py-3 text-sm font-semibold">Cargando datos...</p>
+        <Alert tone="neutral" size="md">
+          Cargando datos...
+        </Alert>
       )}
-      {error && <p className="mb-4 rounded bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
+      {error && (
+        <Alert tone="error" size="md" className="mb-4">
+          {error}
+        </Alert>
+      )}
       {children}
     </section>
   );
@@ -417,7 +406,7 @@ function OrdersTable({ orders, compact = false, onView, onStatus, onCancel }) {
                     ))}
                   </select>
                 ) : (
-                  <StatusBadge tone={statusTone[order.estadoPedido]}>{order.estadoPedido}</StatusBadge>
+                  <StatusBadge tone={orderStatusTone(order.estadoPedido)}>{order.estadoPedido}</StatusBadge>
                 )}
               </Td>
               <Td>{formatDate(order.fechaPedido)}</Td>

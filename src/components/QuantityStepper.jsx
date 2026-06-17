@@ -1,7 +1,8 @@
 import { Minus, Plus } from "lucide-react";
+import { Card } from "./ui/Card.jsx";
 export function QuantityStepper({ value, onChange, min = 1 }) {
   return (
-    <div className="inline-grid h-8 grid-cols-3 overflow-hidden rounded border border-line bg-white">
+    <Card className="inline-grid h-8 grid-cols-3 overflow-hidden">
       <button
         type="button"
         aria-label="Restar cantidad"
@@ -19,6 +20,6 @@ export function QuantityStepper({ value, onChange, min = 1 }) {
       >
         <Plus size={14} />
       </button>
-    </div>
+    </Card>
   );
 }

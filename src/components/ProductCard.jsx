@@ -4,6 +4,7 @@ import { addItemToCart } from "@/features/cart/cartSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "./Button.jsx";
+import { Card } from "./ui/Card.jsx";
 import { ProductVisual } from "./ProductVisual.jsx";
 export function ProductCard({ product }) {
   const dispatch = useDispatch();
@@ -16,7 +17,7 @@ export function ProductCard({ product }) {
     }
   }
   return (
-    <article className="overflow-hidden rounded border border-line bg-white">
+    <Card as="article" className="overflow-hidden">
       <Link to={`/productos/${product.id}`} className="block">
         <ProductVisual product={product} />
       </Link>
@@ -26,10 +27,10 @@ export function ProductCard({ product }) {
           {product.nombreProducto}
         </Link>
         <p className="text-lg font-extrabold text-forest">{formatMoney(product.precio)}</p>
-        <Button className="h-8 w-full text-xs" onClick={handleAddToCart}>
+        <Button size="sm" className="w-full" onClick={handleAddToCart}>
           Agregar al carrito
         </Button>
       </div>
-    </article>
+    </Card>
   );
 }

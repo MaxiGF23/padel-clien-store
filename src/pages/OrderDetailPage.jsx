@@ -1,22 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { orderStatusLabel, orderStatusTone } from "@/features/orders/statusConfig.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
 import { SummaryRows } from "@/components/SummaryRows.jsx";
-
-const statusStyles = {
-  CONFIRMADO: "bg-blue-100 text-blue-800",
-  EN_CAMINO: "bg-amber-100 text-amber-800",
-  ENTREGADO: "bg-emerald-100 text-emerald-800",
-  CANCELADO: "bg-red-100 text-red-700"
-};
-const statusLabels = {
-  CONFIRMADO: "Confirmado",
-  EN_CAMINO: "En camino",
-  ENTREGADO: "Entregado",
-  CANCELADO: "Cancelado"
-};
+import { Card } from "@/components/ui/Card.jsx";
+import { Container } from "@/components/ui/Container.jsx";
+import { EmptyState } from "@/components/ui/EmptyState.jsx";
+import { StatusBadge } from "@/components/ui/StatusBadge.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 
 export function OrderDetailPage() {
   const { id } = useParams();
@@ -26,12 +19,11 @@ export function OrderDetailPage() {
 
   if (!order) {
     return (
-      <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
-        <div className="rounded border border-line bg-white p-8 text-center">
-          <p className="mb-4 text-sm text-neutral-500">Pedido no encontrado</p>
-          <Button to="/pedidos">Volver a mis pedidos</Button>
-        </div>
-      </section>
+      <Container>
+        <Card className="p-8">
+          <EmptyState message="Pedido no encontrado" action={<Button to="/pedidos">Volver a mis pedidos</Button>} />
+        </Card>
+      </Container>
     );
   }
 
@@ -39,20 +31,22 @@ export function OrderDetailPage() {
   const discount = order.descuentoAplicado || 0;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
+    <Container>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold">Pedido #{order.id}</h1>
-          <p className="mt-1 text-sm text-neutral-500">Realizado el {formatDate(order.fechaPedido)}</p>
+          <Text variant="title">Pedido #{order.id}</Text>
+          <Text variant="subtitle" className="mt-1">
+            Realizado el {formatDate(order.fechaPedido)}
+          </Text>
         </div>
-        <span className={`rounded px-3 py-1 text-sm font-bold ${statusStyles[order.estadoPedido]}`}>
-          {statusLabels[order.estadoPedido]}
-        </span>
+        <StatusBadge tone={orderStatusTone(order.estadoPedido)} size="md">
+          {orderStatusLabel(order.estadoPedido)}
+        </StatusBadge>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded border border-line bg-white p-5">
+          <Card className="p-5">
             <h2 className="mb-4 text-lg font-extrabold">Productos</h2>
             <div className="space-y-4">
               {order.detalles.map((item) => (
@@ -67,9 +61,9 @@ export function OrderDetailPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded border border-line bg-white p-5">
+          <Card className="p-5">
             <h2 className="mb-4 text-lg font-extrabold">Detalles de envío</h2>
             <div className="grid gap-4 text-sm">
               <div>
@@ -89,11 +83,13 @@ export function OrderDetailPage() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
-        <aside className="rounded border border-line bg-white p-5">
-          <h2 className="mb-5 font-extrabold">Resumen del pedido</h2>
+        <Card as="aside" className="p-5">
+          <Text variant="section" className="mb-5">
+            Resumen del pedido
+          </Text>
           <SummaryRows
             subtotal={subtotal}
             shipping={order.metodoEnvio === "RETIRO_TIENDA" ? 0 : 1500}
@@ -110,8 +106,8 @@ export function OrderDetailPage() {
           <Button className="mt-6 w-full" to="/pedidos">
             Volver a mis pedidos
           </Button>
-        </aside>
+        </Card>
       </div>
-    </section>
+    </Container>
   );
 }
