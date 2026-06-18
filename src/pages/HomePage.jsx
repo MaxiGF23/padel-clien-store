@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCatalog, setCategory, setSort, toggleBrand } from "@/features/catalog/catalogSlice.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductCard } from "@/components/ProductCard.jsx";
+import { Card } from "@/components/ui/Card.jsx";
+import { Container } from "@/components/ui/Container.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 const brands = ["Bullpadel", "Head", "Dunlop", "Wilson", "Adidas"];
 export function HomePage() {
   const dispatch = useDispatch();
@@ -20,14 +23,14 @@ export function HomePage() {
   return (
     <>
       <section className="bg-forest px-6 py-14 text-center text-white">
-        <h1 className="text-3xl font-extrabold md:text-4xl">Tu juego, tu equipamiento</h1>
+        <Text variant="title">Tu juego, tu equipamiento</Text>
         <p className="mt-2 text-sm text-white/80">Las mejores marcas de padel · Envio a todo el pais</p>
         <Button variant="secondary" className="mt-6 h-9 bg-white text-forest">
           Ver catalogo completo
         </Button>
       </section>
-      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[210px_1fr] md:px-6">
-        <aside className="self-start rounded border border-line bg-white p-4">
+      <Container className="grid gap-6 md:grid-cols-[210px_1fr]">
+        <Card as="aside" className="self-start p-4">
           <h2 className="mb-3 text-xs font-bold text-neutral-500">Categorias</h2>
           <div className="space-y-1">
             {["Todos los productos", ...categories.map((c) => c.nombreCategoria)].map((c) => (
@@ -54,7 +57,7 @@ export function HomePage() {
               </label>
             ))}
           </div>
-        </aside>
+        </Card>
         <div>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -81,7 +84,7 @@ export function HomePage() {
             </div>
           )}
         </div>
-      </section>
+      </Container>
     </>
   );
 }

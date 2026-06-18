@@ -12,6 +12,11 @@ import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
 import { QuantityStepper } from "@/components/QuantityStepper.jsx";
 import { SummaryRows } from "@/components/SummaryRows.jsx";
+import { Card } from "@/components/ui/Card.jsx";
+import { Container } from "@/components/ui/Container.jsx";
+import { EmptyState } from "@/components/ui/EmptyState.jsx";
+import { Input } from "@/components/ui/Input.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 export function CartPage() {
   const dispatch = useDispatch(),
     cart = useSelector((s) => s.cart),
@@ -22,16 +27,19 @@ export function CartPage() {
     await dispatch(validateCoupon(cart.couponCode));
   };
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 md:px-6">
-      <h1 className="text-3xl font-extrabold">Mi carrito</h1>
-      <p className="mt-1 text-sm text-neutral-500">{cart.detalles.length} productos en tu carrito</p>
+    <Container>
+      <Text variant="title">Mi carrito</Text>
+      <Text variant="subtitle" className="mt-1">
+        {cart.detalles.length} productos en tu carrito
+      </Text>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="min-h-96 rounded border border-line bg-white">
+        <Card className="min-h-96">
           {cart.detalles.length === 0 ? (
-            <div className="flex h-72 flex-col items-center justify-center gap-4 text-center">
-              <p className="text-sm text-neutral-500">Todavia no agregaste productos.</p>
-              <Button to="/">Ver productos</Button>
-            </div>
+            <EmptyState
+              className="h-72"
+              message="Todavia no agregaste productos."
+              action={<Button to="/">Ver productos</Button>}
+            />
           ) : (
             cart.detalles.map((item) => (
               <div
@@ -60,13 +68,15 @@ export function CartPage() {
               </div>
             ))
           )}
-        </div>
-        <aside className="self-start rounded border border-line bg-white p-5">
-          <h2 className="mb-5 font-extrabold">Resumen del pedido</h2>
+        </Card>
+        <Card as="aside" className="self-start p-5">
+          <Text variant="section" className="mb-5">
+            Resumen del pedido
+          </Text>
           <SummaryRows subtotal={subtotal} shipping={cart.shippingCost} discount={cart.discount} total={total} />
           <div className="mt-5 flex gap-2">
-            <input
-              className="focus-ring h-10 min-w-0 flex-1 rounded border border-line px-3 text-sm"
+            <Input
+              className="min-w-0 flex-1"
               value={cart.couponCode}
               onChange={(e) => dispatch(setCouponCode(e.target.value))}
               placeholder="Codigo de cupon"
@@ -90,8 +100,8 @@ export function CartPage() {
           <Button to="/" variant="secondary" className="mt-3 w-full">
             Seguir comprando
           </Button>
-        </aside>
+        </Card>
       </div>
-    </section>
+    </Container>
   );
 }

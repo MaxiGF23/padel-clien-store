@@ -15,6 +15,9 @@ import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
 import { SummaryRows } from "@/components/SummaryRows.jsx";
+import { Card } from "@/components/ui/Card.jsx";
+import { FormField } from "@/components/ui/FormField.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 const shippingOptions = [
   { id: "ENVIO_DOMICILIO", title: "Envio estandar", detail: "Llega en 3-5 dias habiles", cost: 1500 },
   { id: "ENVIO_EXPRES", title: "Envio express", detail: "Llega en 24-48 horas", cost: 3200 },
@@ -117,33 +120,23 @@ export function CheckoutPage() {
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
             <Check size={32} className="text-emerald-700" />
           </div>
-          <h1 className="mb-2 text-3xl font-extrabold">¡Pedido confirmado!</h1>
+          <Text variant="title" className="mb-2">
+            ¡Pedido confirmado!
+          </Text>
           <p className="mb-6 text-sm text-neutral-500">Tu pago ha sido procesado exitosamente</p>
-          <div className="mb-8 rounded border border-line bg-white p-6">
+          <Card className="mb-8 p-6">
             <p className="text-xs font-semibold text-neutral-500">NÚMERO DE PEDIDO</p>
             <p className="mt-2 text-2xl font-extrabold text-forest">#{checkout.result?.pedidoId}</p>
             <p className="mt-4 text-xs text-neutral-500">ID de Transacción: {checkout.result?.referenciaTransaccion}</p>
-            <div className="mt-6 space-y-3 border-t border-line pt-6">
-              <div className="flex justify-between text-sm text-neutral-600">
-                <span>Subtotal</span>
-                <span>{formatMoney(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-neutral-600">
-                <span>Envío</span>
-                <span>{cart.shippingCost === 0 ? "Gratis" : formatMoney(cart.shippingCost)}</span>
-              </div>
-              {cart.discount > 0 && (
-                <div className="flex justify-between text-sm text-neutral-600">
-                  <span>Descuento</span>
-                  <span className="text-green-600">-{formatMoney(cart.discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between border-t border-line pt-3 text-base font-bold text-forest">
-                <span>Total pagado</span>
-                <span>{formatMoney(checkout.result?.total)}</span>
-              </div>
+            <div className="mt-6 border-t border-line pt-6">
+              <SummaryRows
+                subtotal={subtotal}
+                shipping={cart.shippingCost}
+                discount={cart.discount}
+                total={checkout.result?.total}
+              />
             </div>
-          </div>
+          </Card>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button onClick={() => leaveConfirmation("/")}>Volver al inicio</Button>
             <Button variant="secondary" onClick={() => leaveConfirmation("/pedidos")}>
@@ -164,22 +157,20 @@ export function CheckoutPage() {
           </div>
           <form className="grid gap-6 lg:grid-cols-[1fr_360px]" onSubmit={handleSubmit}>
             <div className="space-y-6">
-              <section className="rounded border border-line bg-white p-5">
+              <Card as="section" className="p-5">
                 <h1 className="mb-5 text-lg font-extrabold">Direccion de envio</h1>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {["nombre", "apellido", "calle", "numero", "ciudad", "provincia", "codigoPostal"].map((field) => (
-                    <label key={field}>
-                      <span className="mb-1 block text-xs font-semibold text-neutral-500">{field}</span>
-                      <input
-                        className="focus-ring h-10 w-full rounded border border-line px-3 text-sm"
-                        value={checkout.address[field] || ""}
-                        onChange={(e) => dispatch(updateAddress({ [field]: e.target.value }))}
-                      />
-                    </label>
+                    <FormField
+                      key={field}
+                      label={field}
+                      value={checkout.address[field] || ""}
+                      onChange={(e) => dispatch(updateAddress({ [field]: e.target.value }))}
+                    />
                   ))}
                 </div>
-              </section>
-              <section className="rounded border border-line bg-white p-5">
+              </Card>
+              <Card as="section" className="p-5">
                 <h2 className="mb-4 text-lg font-extrabold">Metodo de envio</h2>
                 <div className="space-y-3">
                   {shippingOptions.map((option) => (
@@ -208,8 +199,8 @@ export function CheckoutPage() {
                     </label>
                   ))}
                 </div>
-              </section>
-              <section className="rounded border border-line bg-white p-5">
+              </Card>
+              <Card as="section" className="p-5">
                 <h2 className="mb-4 text-lg font-extrabold">Medio de pago</h2>
                 <div className="mb-5 grid grid-cols-3 rounded border border-line bg-paper p-1">
                   {paymentOptions.map(({ id, label, icon: Icon }) => (
@@ -277,10 +268,12 @@ export function CheckoutPage() {
                     </p>
                   </div>
                 )}
-              </section>
+              </Card>
             </div>
-            <aside className="self-start rounded border border-line bg-white p-5">
-              <h2 className="mb-5 font-extrabold">Tu pedido</h2>
+            <Card as="aside" className="self-start p-5">
+              <Text variant="section" className="mb-5">
+                Tu pedido
+              </Text>
               <div className="mb-5 space-y-4">
                 {cart.detalles.map((item) => (
                   <div key={item.idProducto} className="grid grid-cols-[48px_1fr_auto] gap-3">
@@ -308,7 +301,7 @@ export function CheckoutPage() {
                 )}
               </Button>
               <p className="mt-4 text-center text-xs text-neutral-500">Pago seguro · Datos encriptados</p>
-            </aside>
+            </Card>
           </form>
         </>
       )}

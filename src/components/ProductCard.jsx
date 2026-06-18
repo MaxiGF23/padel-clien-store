@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addItemToCart } from "@/features/cart/cartSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "./Button.jsx";
+import { Card } from "./ui/Card.jsx";
 import { ProductVisual } from "./ProductVisual.jsx";
 export function ProductCard({ product }) {
   const dispatch = useDispatch();
+  const isAdmin = useSelector((s) => s.auth.user?.rol === "ADMIN");
   async function handleAddToCart() {
     try {
       await dispatch(addItemToCart({ product, quantity: 1 })).unwrap();
@@ -16,7 +18,7 @@ export function ProductCard({ product }) {
     }
   }
   return (
-    <article className="overflow-hidden rounded border border-line bg-white">
+    <Card as="article" className="overflow-hidden">
       <Link to={`/productos/${product.id}`} className="block">
         <ProductVisual product={product} />
       </Link>
@@ -26,10 +28,12 @@ export function ProductCard({ product }) {
           {product.nombreProducto}
         </Link>
         <p className="text-lg font-extrabold text-forest">{formatMoney(product.precio)}</p>
-        <Button className="h-8 w-full text-xs" onClick={handleAddToCart}>
-          Agregar al carrito
-        </Button>
+        {!isAdmin && (
+          <Button size="sm" className="w-full" onClick={handleAddToCart}>
+            Agregar al carrito
+          </Button>
+        )}
       </div>
-    </article>
+    </Card>
   );
 }
