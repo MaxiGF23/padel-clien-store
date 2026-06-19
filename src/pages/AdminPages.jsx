@@ -1,5 +1,5 @@
 import { Edit, Eye, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AdminButton, AdminModal, AdminTable, Field, StatusBadge } from "@/components/admin/AdminPrimitives.jsx";
 import { inputClass } from "@/components/ui/Input.jsx";
@@ -17,10 +17,17 @@ import {
   saveUser,
   fetchAdminData
 } from "@/features/admin/adminSlice.js";
+import {
+  getProductImages,
+  uploadProductImage,
+  deleteProductImage,
+  reorderProductImages
+} from "@/services/adminService.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 import { orderStatusTone } from "@/features/orders/statusConfig.js";
 import { Alert } from "@/components/ui/Alert.jsx";
 import { Card } from "@/components/ui/Card.jsx";
+import { Text } from "@/components/ui/Text.jsx";
 
 const orderStatuses = ["PENDIENTE", "CONFIRMADO", "EN_PROCESO", "ENVIADO", "ENTREGADO", "CANCELADO"];
 const roleOptions = ["USER", "ADMIN"];
@@ -115,10 +122,18 @@ export function AdminProductsPage() {
           categories={categories}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveProduct({ id: editing.id, payload })).then(() => {
+          onSubmit={async ({ payload, pendingFiles }) => {
+            const saved = await dispatch(saveProduct({ id: editing.id, payload })).unwrap();
+            const productId = editing.id || saved?.id;
+            // En modo "crear" subimos las imagenes recien elegidas, en orden, una vez que existe el id.
+            if (productId && pendingFiles?.length) {
+              for (const file of pendingFiles) {
+                await uploadProductImage(productId, file);
+              }
+            }
             setEditing(null);
             dispatch(fetchAdminData());
-          })}
+          }}
         />
       )}
     </AdminPage>
@@ -445,6 +460,144 @@ function RowActions({ onEdit, onDelete }) {
   );
 }
 
+// Mueve un elemento de un array de la posicion `from` a la posicion `to`.
+const moveItem = (arr, from, to) => {
+  const copy = [...arr];
+  const [moved] = copy.splice(from, 1);
+  copy.splice(to, 0, moved);
+  return copy;
+};
+
+let pendingImageKey = 0;
+
+// Grilla de miniaturas reordenable por drag & drop. La primera es la principal.
+function ImageGrid({ items, onReorder, onRemove, disabled }) {
+  const dragIndex = useRef(null);
+  if (!items.length) return <p className="text-xs text-neutral-500">Sin imagenes todavia.</p>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, index) => (
+        <div
+          key={item.key}
+          draggable
+          onDragStart={() => (dragIndex.current = index)}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            if (dragIndex.current !== null && dragIndex.current !== index) onReorder(dragIndex.current, index);
+            dragIndex.current = null;
+          }}
+          onDragEnd={() => (dragIndex.current = null)}
+          className="group relative h-20 w-20 shrink-0 cursor-move overflow-hidden rounded border border-line bg-cloud"
+        >
+          <img src={item.src} alt="" className="h-full w-full object-contain" />
+          {index === 0 && (
+            <span className="absolute left-0 top-0 bg-forest px-1 text-[9px] font-bold text-white">Principal</span>
+          )}
+          <button
+            type="button"
+            onClick={() => onRemove(item)}
+            disabled={disabled}
+            aria-label="Quitar imagen"
+            className="absolute right-0 top-0 bg-black/60 px-1.5 text-sm font-bold text-white opacity-0 group-hover:opacity-100"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Galeria de un producto existente: los cambios se persisten al instante contra el backend.
+function ServerGallery({ productId }) {
+  const [images, setImages] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const reload = useCallback(
+    () =>
+      getProductImages(productId).then((list) =>
+        setImages(list.map((img) => ({ key: `srv-${img.id}`, id: img.id, src: img.src })))
+      ),
+    [productId]
+  );
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  async function handleAdd(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    setError(null);
+    try {
+      for (const file of files) await uploadProductImage(productId, file);
+      await reload();
+    } catch (err) {
+      setError(err?.message || "No se pudo subir la imagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemove(item) {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteProductImage(item.id);
+      await reload();
+    } catch (err) {
+      setError(err?.message || "No se pudo quitar la imagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Reordenamiento optimista: se ve al instante y se persiste en segundo plano,
+  // sin bloquear el arrastre (asi se puede reordenar varias veces seguidas).
+  function handleReorder(from, to) {
+    const next = moveItem(images, from, to);
+    setImages(next);
+    reorderProductImages(productId, next.map((img) => img.id)).catch(() => reload());
+  }
+
+  return (
+    <div className="space-y-2">
+      <ImageGrid items={images} onReorder={handleReorder} onRemove={handleRemove} disabled={busy} />
+      <input type="file" accept="image/*" multiple onChange={handleAdd} className="text-xs" disabled={busy} />
+      {busy && <p className="text-[11px] text-forest">Subiendo…</p>}
+      {error && <p className="text-[11px] font-bold text-red-600">{error}</p>}
+      <p className="text-[11px] text-neutral-500">
+        Arrastra para reordenar · la primera es la principal · los cambios se guardan al instante.
+      </p>
+    </div>
+  );
+}
+
+// Galeria de un producto nuevo: se acumulan archivos y se suben al guardar el producto.
+function PendingGallery({ items, onChange }) {
+  function handleAdd(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    const added = files.map((file) => ({ key: `new-${pendingImageKey++}`, file, src: URL.createObjectURL(file) }));
+    onChange([...items, ...added]);
+  }
+  return (
+    <div className="space-y-2">
+      <ImageGrid
+        items={items}
+        onReorder={(from, to) => onChange(moveItem(items, from, to))}
+        onRemove={(item) => onChange(items.filter((entry) => entry.key !== item.key))}
+      />
+      <input type="file" accept="image/*" multiple onChange={handleAdd} className="text-xs" />
+      <p className="text-[11px] text-neutral-500">Arrastra para reordenar · se subiran al guardar el producto.</p>
+    </div>
+  );
+}
+
 function ProductForm({ product, categories, saving, onClose, onSubmit }) {
   const [form, setForm] = useState({
     nombreProducto: product.nombreProducto || "",
@@ -454,15 +607,20 @@ function ProductForm({ product, categories, saving, onClose, onSubmit }) {
     stock: product.stock || 0,
     idCategoria: product.idCategoria || categories[0]?.id || ""
   });
+  const [pending, setPending] = useState([]);
+
   return (
     <AdminModal title={product.id ? "Editar Producto" : "Crear Producto"} onClose={onClose}>
       <FormGrid
         onSubmit={() =>
           onSubmit({
-            ...form,
-            precio: Number(form.precio),
-            stock: Number(form.stock),
-            idCategoria: Number(form.idCategoria)
+            payload: {
+              ...form,
+              precio: Number(form.precio),
+              stock: Number(form.stock),
+              idCategoria: Number(form.idCategoria)
+            },
+            pendingFiles: pending.map((entry) => entry.file)
           })
         }
         saving={saving}
@@ -491,6 +649,16 @@ function ProductForm({ product, categories, saving, onClose, onSubmit }) {
             onChange={(event) => setForm({ ...form, descripcion: event.target.value })}
           />
         </Field>
+        <div className="sm:col-span-2">
+          <Text as="span" variant="label" className="mb-1 block">
+            Imagenes
+          </Text>
+          {product.id ? (
+            <ServerGallery productId={product.id} />
+          ) : (
+            <PendingGallery items={pending} onChange={setPending} />
+          )}
+        </div>
       </FormGrid>
     </AdminModal>
   );

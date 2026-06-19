@@ -6,6 +6,7 @@ import { addItemToCart } from "@/features/cart/cartSlice.js";
 import { fetchProduct } from "@/features/catalog/catalogSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { formatMoney } from "@/utils/formatters.js";
+import { getProductImagesDataUrls, usingMocks } from "@/services/apiClient.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
 import { QuantityStepper } from "@/components/QuantityStepper.jsx";
@@ -20,19 +21,37 @@ export function ProductDetailPage() {
   const isAdmin = useSelector((s) => s.auth.user?.rol === "ADMIN");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [fetchedImages, setFetchedImages] = useState([]);
   const [prevId, setPrevId] = useState(id);
   // Reset selection when navigating to another product
   if (prevId !== id) {
     setPrevId(id);
     setActiveImage(0);
     setQuantity(1);
+    setFetchedImages([]);
   }
   useEffect(() => {
     dispatch(fetchProduct(id));
   }, [dispatch, id]);
+  // Galeria real desde el backend (Base64). En mock se deriva en render mas abajo.
+  useEffect(() => {
+    if (usingMocks() || !product?.id || String(product.id) !== String(id)) return;
+    let cancelled = false;
+    getProductImagesDataUrls(product.id).then((list) => {
+      if (!cancelled) setFetchedImages(list.map((img) => img.src));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id, id]);
+  // En mock las imagenes vienen en el propio producto; con backend, del effect de arriba.
+  const images = usingMocks() ? (product?.imagenes || []).map((img) => img.src) : fetchedImages;
   if (!product) return <div className="mx-auto max-w-6xl px-6 py-10">Cargando producto...</div>;
-  // Mock gallery: the product visual plus alternate views
-  const gallery = [product.visual || "🏓", "🟡", "📐", "🎯"];
+  // Si el producto tiene imagenes reales las usamos; si no, caemos a los visuales mock (emojis).
+  const hasImages = images.length > 0;
+  const gallery = hasImages ? images : [product.visual || "🏓", "🟡", "📐", "🎯"];
+  const visualProduct = (entry) =>
+    hasImages ? { imagenDataUrl: entry, nombreProducto: product.nombreProducto } : { visual: entry };
   const goTo = (index) => setActiveImage((index + gallery.length) % gallery.length);
   async function handleAddToCart() {
     try {
@@ -55,7 +74,7 @@ export function ProductDetailPage() {
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
           <Card className="relative p-6">
-            <ProductVisual product={{ ...product, visual: gallery[activeImage] }} size="lg" />
+            <ProductVisual product={visualProduct(gallery[activeImage])} size="lg" />
             <button
               type="button"
               aria-label="Imagen anterior"
@@ -90,7 +109,7 @@ export function ProductDetailPage() {
                 className={`focus-ring rounded border bg-white p-2 ${i === activeImage ? "border-forest" : "border-line hover:border-neutral-300"}`}
                 onClick={() => setActiveImage(i)}
               >
-                <ProductVisual product={{ visual }} size="sm" />
+                <ProductVisual product={visualProduct(visual)} size="sm" />
               </button>
             ))}
           </div>
