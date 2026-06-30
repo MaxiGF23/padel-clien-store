@@ -18,12 +18,30 @@ import {
   fetchAdminData
 } from "@/features/admin/adminSlice.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
+import { emailError, phoneError, EMAIL_PATTERN, PHONE_PATTERN } from "@/utils/validators.js";
+import { showToast } from "@/features/ui/toastSlice.js";
+import { STATUS } from "@/utils/asyncStatus.js";
 import { orderStatusTone } from "@/features/orders/statusConfig.js";
 import { Alert } from "@/components/ui/Alert.jsx";
 import { Card } from "@/components/ui/Card.jsx";
 
 const orderStatuses = ["PENDIENTE", "CONFIRMADO", "EN_PROCESO", "ENVIADO", "ENTREGADO", "CANCELADO"];
 const roleOptions = ["USER", "ADMIN"];
+
+// Despacha una accion del admin, muestra un toast segun el resultado y, si fue exitosa,
+// ejecuta el callback (cerrar modal, etc.) y refresca los datos. Centraliza el feedback
+// para que cada submit/accion del panel notifique al usuario.
+async function withToast(dispatch, action, successMessage, onSuccess) {
+  const result = await dispatch(action);
+  if (result.meta.requestStatus === "fulfilled") {
+    dispatch(showToast({ type: "success", message: successMessage }));
+    onSuccess?.();
+    dispatch(fetchAdminData());
+  } else {
+    dispatch(showToast({ type: "error", message: result.error?.message || "No se pudo completar la operacion" }));
+  }
+  return result;
+}
 
 export function AdminDashboardPage() {
   const { products, orders, users } = useSelector((state) => state.admin);
@@ -92,7 +110,20 @@ export function AdminProductsPage() {
           <tbody>
             {products.map((product) => (
               <tr key={product.id} className="border-t border-line">
-                <Td>{product.nombreProducto}</Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded border border-line bg-cloud">
+                      {product.imagenUrl ? (
+                        <img src={product.imagenUrl} alt="" className="h-full w-full object-contain" />
+                      ) : (
+                        <span className="text-base" aria-hidden="true">
+                          {product.visual || "🏓"}
+                        </span>
+                      )}
+                    </span>
+                    {product.nombreProducto}
+                  </div>
+                </Td>
                 <Td>{product.nombreCategoria}</Td>
                 <Td>{formatMoney(product.precio)}</Td>
                 <Td>{product.stock}</Td>
@@ -102,7 +133,7 @@ export function AdminProductsPage() {
                   </StatusBadge>
                 </Td>
                 <Td>
-                  <RowActions onEdit={() => setEditing(product)} onDelete={() => dispatch(removeProduct(product.id)).then(() => dispatch(fetchAdminData()))} />
+                  <RowActions onEdit={() => setEditing(product)} onDelete={() => withToast(dispatch, removeProduct(product.id), "Producto eliminado")} />
                 </Td>
               </tr>
             ))}
@@ -115,10 +146,14 @@ export function AdminProductsPage() {
           categories={categories}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveProduct({ id: editing.id, payload })).then(() => {
-            setEditing(null);
-            dispatch(fetchAdminData());
-          })}
+          onSubmit={(payload) =>
+            withToast(
+              dispatch,
+              saveProduct({ id: editing.id, payload }),
+              editing.id ? "Producto actualizado" : "Producto creado",
+              () => setEditing(null)
+            )
+          }
         />
       )}
     </AdminPage>
@@ -172,7 +207,7 @@ export function AdminCategoriesPage() {
                 <Td>
                   <RowActions
                     onEdit={() => setEditing(category)}
-                    onDelete={() => dispatch(removeCategory(category.id)).then(() => dispatch(fetchAdminData()))}
+                    onDelete={() => withToast(dispatch, removeCategory(category.id), "Categoria eliminada")}
                   />
                 </Td>
               </tr>
@@ -185,10 +220,14 @@ export function AdminCategoriesPage() {
           category={editing}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveCategory({ id: editing.id, payload })).then(() => {
-            setEditing(null);
-            dispatch(fetchAdminData());
-          })}
+          onSubmit={(payload) =>
+            withToast(
+              dispatch,
+              saveCategory({ id: editing.id, payload }),
+              editing.id ? "Categoria actualizada" : "Categoria creada",
+              () => setEditing(null)
+            )
+          }
         />
       )}
     </AdminPage>
@@ -240,7 +279,7 @@ export function AdminCouponsPage() {
                     <StatusBadge tone={expired ? "warning" : "success"}>{expired ? "Vencido" : "Activo"}</StatusBadge>
                   </Td>
                   <Td>
-                    <AdminButton variant="danger" onClick={() => dispatch(removeCoupon(coupon.id)).then(() => dispatch(fetchAdminData()))}>
+                    <AdminButton variant="danger" onClick={() => withToast(dispatch, removeCoupon(coupon.id), "Cupon eliminado")}>
                       <Trash2 size={13} /> Eliminar
                     </AdminButton>
                   </Td>
@@ -254,10 +293,7 @@ export function AdminCouponsPage() {
         <CouponForm
           saving={saving}
           onClose={() => setCreating(false)}
-          onSubmit={(payload) => dispatch(saveCoupon(payload)).then(() => {
-            setCreating(false);
-            dispatch(fetchAdminData());
-          })}
+          onSubmit={(payload) => withToast(dispatch, saveCoupon(payload), "Cupon creado", () => setCreating(false))}
         />
       )}
     </AdminPage>
@@ -274,8 +310,8 @@ export function AdminOrdersPage() {
       <OrdersTable
         orders={orders}
         onView={setViewing}
-        onStatus={(id, estadoPedido) => dispatch(changeOrderStatus({ id, estadoPedido })).then(() => dispatch(fetchAdminData()))}
-        onCancel={(id) => dispatch(cancelOrder(id)).then(() => dispatch(fetchAdminData()))}
+        onStatus={(id, estadoPedido) => withToast(dispatch, changeOrderStatus({ id, estadoPedido }), "Estado del pedido actualizado")}
+        onCancel={(id) => withToast(dispatch, cancelOrder(id), "Pedido cancelado")}
       />
       {viewing && <OrderDetail order={viewing} onClose={() => setViewing(null)} />}
     </AdminPage>
@@ -320,7 +356,7 @@ export function AdminUsersPage() {
                   <select
                     className="focus-ring h-8 rounded border border-line bg-white px-2 text-xs"
                     value={user.rol}
-                    onChange={(event) => dispatch(changeUserRole({ id: user.id, rol: event.target.value })).then(() => dispatch(fetchAdminData()))}
+                    onChange={(event) => withToast(dispatch, changeUserRole({ id: user.id, rol: event.target.value }), "Rol actualizado")}
                   >
                     {roleOptions.map((role) => (
                       <option key={role}>{role}</option>
@@ -329,7 +365,7 @@ export function AdminUsersPage() {
                 </Td>
                 <Td>{formatDate(user.createdAt)}</Td>
                 <Td>
-                  <RowActions onEdit={() => setEditing(user)} onDelete={() => dispatch(removeUser(user.id)).then(() => dispatch(fetchAdminData()))} />
+                  <RowActions onEdit={() => setEditing(user)} onDelete={() => withToast(dispatch, removeUser(user.id), "Usuario eliminado")} />
                 </Td>
               </tr>
             ))}
@@ -341,10 +377,14 @@ export function AdminUsersPage() {
           user={editing}
           saving={saving}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => dispatch(saveUser({ id: editing.id, payload })).then(() => {
-            setEditing(null);
-            dispatch(fetchAdminData());
-          })}
+          onSubmit={(payload) =>
+            withToast(
+              dispatch,
+              saveUser({ id: editing.id, payload }),
+              editing.id ? "Usuario actualizado" : "Usuario creado",
+              () => setEditing(null)
+            )
+          }
         />
       )}
     </AdminPage>
@@ -359,7 +399,7 @@ function AdminPage({ title, action, children }) {
         <h1 className="text-2xl font-extrabold">{title}</h1>
         {action}
       </div>
-      {status === "loading" && (
+      {status === STATUS.LOADING && (
         <Alert tone="neutral" size="md">
           Cargando datos...
         </Alert>
@@ -445,6 +485,57 @@ function RowActions({ onEdit, onDelete }) {
   );
 }
 
+// Carga de imagen del producto. Lee el archivo como data URL (sin backend de storage),
+// lo guarda en el form y muestra una vista previa. Valida tipo y tamaño.
+function ImageUploadField({ previewUrl, onSelect, onClear }) {
+  const [error, setError] = useState("");
+  function handleFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo debe ser una imagen");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("La imagen no debe superar los 2 MB");
+      return;
+    }
+    setError("");
+    // Guardamos el File (para subirlo al backend) y una data URL para la vista previa.
+    const reader = new FileReader();
+    reader.onload = () => onSelect(file, reader.result);
+    reader.readAsDataURL(file);
+  }
+  return (
+    <Field label="Imagen del producto" className="sm:col-span-2" error={error}>
+      <div className="flex items-center gap-4">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-line bg-cloud">
+          {previewUrl ? (
+            <img src={previewUrl} alt="Vista previa" className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-2xl" aria-hidden="true">
+              🏓
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFile}
+            className="text-xs text-neutral-500 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-forest file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+          />
+          {previewUrl && (
+            <button type="button" onClick={onClear} className="text-left text-xs font-semibold text-red-600">
+              Quitar imagen
+            </button>
+          )}
+        </div>
+      </div>
+    </Field>
+  );
+}
+
 function ProductForm({ product, categories, saving, onClose, onSubmit }) {
   const [form, setForm] = useState({
     nombreProducto: product.nombreProducto || "",
@@ -452,7 +543,10 @@ function ProductForm({ product, categories, saving, onClose, onSubmit }) {
     marca: product.marca || "",
     precio: product.precio || "",
     stock: product.stock || 0,
-    idCategoria: product.idCategoria || categories[0]?.id || ""
+    idCategoria: product.idCategoria || categories[0]?.id || "",
+    imagenUrl: product.imagenUrl || "", // vista previa (data URL)
+    imagenFile: null, // archivo nuevo a subir (si el usuario elige uno)
+    imagenRemoved: false // marca que se quitó una imagen existente
   });
   return (
     <AdminModal title={product.id ? "Editar Producto" : "Crear Producto"} onClose={onClose}>
@@ -471,6 +565,11 @@ function ProductForm({ product, categories, saving, onClose, onSubmit }) {
         {input("Marca", "marca", form, setForm)}
         {input("Precio", "precio", form, setForm, "number")}
         {input("Stock", "stock", form, setForm, "number")}
+        <ImageUploadField
+          previewUrl={form.imagenUrl}
+          onSelect={(imagenFile, imagenUrl) => setForm({ ...form, imagenFile, imagenUrl, imagenRemoved: false })}
+          onClear={() => setForm({ ...form, imagenFile: null, imagenUrl: "", imagenRemoved: true })}
+        />
         <Field label="Categoria">
           <select
             className={inputClass}
@@ -556,16 +655,29 @@ function UserForm({ user, saving, onClose, onSubmit }) {
     apellido: user.apellido || "",
     telefono: user.telefono || ""
   });
+  const [errors, setErrors] = useState({});
   const payload =
     user.id && !form.password ? Object.fromEntries(Object.entries(form).filter(([key]) => key !== "password")) : form;
+
+  function handleSubmit() {
+    const fieldErrors = {
+      email: emailError(form.email),
+      telefono: phoneError(form.telefono)
+    };
+    const activeErrors = Object.fromEntries(Object.entries(fieldErrors).filter(([, message]) => message));
+    setErrors(activeErrors);
+    if (Object.keys(activeErrors).length > 0) return;
+    onSubmit(payload);
+  }
+
   return (
     <AdminModal title={user.id ? "Editar Usuario" : "Crear Usuario"} onClose={onClose}>
-      <FormGrid onSubmit={() => onSubmit(payload)} saving={saving}>
+      <FormGrid onSubmit={handleSubmit} saving={saving}>
         {input("Usuario", "username", form, setForm)}
-        {input("Email", "email", form, setForm, "email")}
+        {input("Email", "email", form, setForm, "email", errors.email, EMAIL_PATTERN)}
         {input("Nombre", "nombre", form, setForm)}
         {input("Apellido", "apellido", form, setForm)}
-        {input("Telefono", "telefono", form, setForm)}
+        {input("Telefono", "telefono", form, setForm, "text", errors.telefono, PHONE_PATTERN)}
         {input(user.id ? "Nueva Contrasena" : "Contrasena", "password", form, setForm, "password")}
       </FormGrid>
     </AdminModal>
@@ -629,17 +741,17 @@ function FormGrid({ children, saving, onSubmit }) {
   );
 }
 
-function input(label, key, form, setForm, type = "text") {
+function input(label, key, form, setForm, type = "text", error, pattern) {
   return (
-    <Field label={label}>
-      <input
-        className={inputClass}
-        required
-        type={type}
-        value={form[key]}
-        onChange={(event) => setForm({ ...form, [key]: event.target.value })}
-      />
-    </Field>
+    <Field
+      label={label}
+      error={error}
+      required
+      type={type}
+      pattern={pattern}
+      value={form[key]}
+      onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+    />
   );
 }
 

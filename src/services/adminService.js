@@ -1,5 +1,6 @@
 import { categories, coupons, orders, products, users } from "@/data/mockData.js";
 import { request, usingMocks } from "./apiClient.js";
+import { deleteProductImage, fetchProductImage, uploadProductImage } from "./productImageService.js";
 
 let mockProducts = [...products];
 let mockCategories = [...categories];
@@ -27,17 +28,43 @@ export async function getAdminData() {
   };
 }
 
+// Agrega la imagen (data URL) a cada producto que tenga una guardada en la base.
+async function withImage(product) {
+  if (!product?.tieneImagen) return product;
+  const imagenUrl = await fetchProductImage(product.id);
+  return imagenUrl ? { ...product, imagenUrl } : product;
+}
+
+// Separa los campos de imagen (manejados aparte) del resto del producto, que va como JSON.
+function splitImageFields(payload) {
+  const { imagenFile = null, imagenUrl = "", imagenRemoved = false, ...rest } = payload;
+  return { imagenFile, imagenUrl, imagenRemoved, rest };
+}
+
 export async function getAdminProducts() {
-  return usingMocks() ? mockProducts : request("/productos");
+  if (usingMocks()) return mockProducts;
+  const data = await request("/productos");
+  return Promise.all(data.map(withImage));
 }
 
 export async function createProduct(payload) {
-  if (!usingMocks()) return request("/productos", { method: "POST", body: JSON.stringify(payload) });
+  // El producto se guarda como JSON; la imagen (archivo) se sube aparte y el backend la
+  // persiste en la base (tabla imagen_producto).
+  const { imagenFile, imagenUrl, rest } = splitImageFields(payload);
+  if (!usingMocks()) {
+    const saved = await request("/productos", { method: "POST", body: JSON.stringify(rest) });
+    if (imagenFile) {
+      await uploadProductImage(saved.id, imagenFile);
+      return { ...saved, tieneImagen: true, imagenUrl };
+    }
+    return saved;
+  }
   const category = mockCategories.find((item) => item.id === Number(payload.idCategoria));
   const product = {
-    ...payload,
+    ...rest,
     id: nextId(mockProducts),
-    tieneImagen: false,
+    tieneImagen: Boolean(imagenUrl),
+    imagenUrl: imagenUrl || undefined,
     nombreCategoria: category?.nombreCategoria || ""
   };
   mockProducts = [product, ...mockProducts];
@@ -45,9 +72,28 @@ export async function createProduct(payload) {
 }
 
 export async function updateProduct(id, payload) {
-  if (!usingMocks()) return request(`/productos/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  const { imagenFile, imagenUrl, imagenRemoved, rest } = splitImageFields(payload);
+  if (!usingMocks()) {
+    const saved = await request(`/productos/${id}`, { method: "PUT", body: JSON.stringify(rest) });
+    if (imagenFile) {
+      await uploadProductImage(id, imagenFile);
+      return { ...saved, tieneImagen: true, imagenUrl };
+    }
+    if (imagenRemoved) {
+      await deleteProductImage(id);
+      return { ...saved, tieneImagen: false, imagenUrl: undefined };
+    }
+    // Imagen sin cambios: conservamos la vista previa ya cargada.
+    return { ...saved, imagenUrl };
+  }
   const category = mockCategories.find((item) => item.id === Number(payload.idCategoria));
-  const product = { ...payload, id: Number(id), tieneImagen: false, nombreCategoria: category?.nombreCategoria || "" };
+  const product = {
+    ...rest,
+    id: Number(id),
+    tieneImagen: Boolean(imagenUrl),
+    imagenUrl: imagenUrl || undefined,
+    nombreCategoria: category?.nombreCategoria || ""
+  };
   mockProducts = mockProducts.map((item) => (item.id === Number(id) ? product : item));
   return product;
 }

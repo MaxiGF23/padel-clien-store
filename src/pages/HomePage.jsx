@@ -3,20 +3,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCatalog, setCategory, setSort, toggleBrand } from "@/features/catalog/catalogSlice.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductCard } from "@/components/ProductCard.jsx";
+import { AsyncSection } from "@/components/ui/AsyncSection.jsx";
 import { Card } from "@/components/ui/Card.jsx";
 import { Container } from "@/components/ui/Container.jsx";
 import { Text } from "@/components/ui/Text.jsx";
 const brands = ["Bullpadel", "Head", "Dunlop", "Wilson", "Adidas"];
 export function HomePage() {
   const dispatch = useDispatch();
-  const { products, categories, filters, status } = useSelector((s) => s.catalog);
-  
-  // Refetch al montar para sincronizar con cambios del admin
-  useEffect(() => {
-    dispatch(fetchCatalog());
-  }, [dispatch]);
-  
-  // Refetch cuando cambian los filtros
+  const { products, categories, filters, status, error } = useSelector((s) => s.catalog);
+
+  // Refetch al montar y cada vez que cambian los filtros (sincroniza con cambios del admin).
   useEffect(() => {
     dispatch(fetchCatalog());
   }, [dispatch, filters.category, filters.brands, filters.sort, filters.search]);
@@ -74,15 +70,13 @@ export function HomePage() {
               <option value="price-desc">Precio: mayor a menor</option>
             </select>
           </div>
-          {status === "loading" ? (
-            <p>Cargando productos...</p>
-          ) : (
+          <AsyncSection status={status} error={error} loadingMessage="Cargando productos...">
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {products.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
-          )}
+          </AsyncSection>
         </div>
       </Container>
     </>

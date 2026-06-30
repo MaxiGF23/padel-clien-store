@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as adminService from "@/services/adminService.js";
+import { STATUS } from "@/utils/asyncStatus.js";
 
 const initialState = {
   products: [],
@@ -7,8 +8,8 @@ const initialState = {
   coupons: [],
   orders: [],
   users: [],
-  status: "idle",
-  saving: "idle",
+  status: STATUS.IDLE,
+  saving: STATUS.IDLE,
   error: null
 };
 
@@ -53,15 +54,15 @@ const slice = createSlice({
   extraReducers: (builder) =>
     builder
       .addCase(fetchAdminData.pending, (state) => {
-        state.status = "loading";
+        state.status = STATUS.LOADING;
         state.error = null;
       })
       .addCase(fetchAdminData.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = STATUS.SUCCEEDED;
         Object.assign(state, action.payload);
       })
       .addCase(fetchAdminData.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = STATUS.FAILED;
         state.error = action.error.message;
       })
       .addCase(saveProduct.fulfilled, (state, action) => {
@@ -105,14 +106,14 @@ const slice = createSlice({
           action.type.endsWith("/pending") &&
           action.type !== fetchAdminData.pending.type,
         (state) => {
-          state.saving = "loading";
+          state.saving = STATUS.LOADING;
           state.error = null;
         }
       )
       .addMatcher(
         (action) => action.type.startsWith("admin/") && action.type.endsWith("/rejected"),
         (state, action) => {
-          state.saving = "failed";
+          state.saving = STATUS.FAILED;
           state.error = action.error.message;
         }
       )
@@ -122,7 +123,7 @@ const slice = createSlice({
           action.type.endsWith("/fulfilled") &&
           action.type !== fetchAdminData.fulfilled.type,
         (state) => {
-          state.saving = "idle";
+          state.saving = STATUS.IDLE;
           state.error = null;
         }
       )

@@ -3,6 +3,7 @@ import { coupons } from "@/data/mockData.js";
 import { usingMocks } from "@/services/apiClient.js";
 import * as cartService from "@/services/cartService.js";
 import { validateCouponBackend } from "@/services/couponService.js";
+import { selectIsAdmin } from "@/features/auth/authSlice.js";
 
 const initialState = {
   id: null,
@@ -11,8 +12,7 @@ const initialState = {
   couponCode: "",
   shippingCost: 1500,
   discount: 0,
-  couponError: null,
-  status: "idle"
+  couponError: null
 };
 
 // Calcula el descuento de un cupón sobre el subtotal (lógica compartida mock/backend).
@@ -20,6 +20,17 @@ function calcDiscount(coupon, subtotal) {
   if (coupon.tipoDescuento === "PORCENTAJE") return Math.floor(subtotal * (coupon.descuento / 100));
   if (coupon.tipoDescuento === "MONTO_FIJO") return coupon.descuento;
   return 0;
+}
+
+// Reglas de negocio de un cupón (activo / vigente / con usos disponibles). Compartidas
+// entre la rama mock y la de backend; devuelve el mensaje de error o null si es válido.
+function couponRuleError(coupon) {
+  if (!coupon || coupon.activo === false) return "Este cupón no está activo";
+  if (coupon.fechaVencimiento && new Date(coupon.fechaVencimiento) < new Date()) return "Este cupón ha vencido";
+  if (coupon.usosMaximos != null && coupon.usosActuales >= coupon.usosMaximos) {
+    return "Este cupón ha alcanzado el máximo de usos";
+  }
+  return null;
 }
 
 // Mapea un DetalleCarritoDTO del backend al shape del front. El backend trae los
@@ -34,6 +45,7 @@ function mapDetalle(d, productsById) {
     marca: meta.marca,
     nombreCategoria: meta.nombreCategoria,
     visual: meta.visual,
+    imagenUrl: meta.imagenUrl,
     cantidad: d.cantidad,
     precioReferencial: d.precioReferencial,
     subtotal: d.subtotal
@@ -57,24 +69,16 @@ export const validateCoupon = createAsyncThunk(
       } catch {
         return rejectWithValue("Cupón no encontrado");
       }
-      if (!coupon || coupon.activo === false) return rejectWithValue("Este cupón no está activo");
-      if (coupon.fechaVencimiento && new Date(coupon.fechaVencimiento) < new Date()) {
-        return rejectWithValue("Este cupón ha vencido");
-      }
-      if (coupon.usosMaximos != null && coupon.usosActuales >= coupon.usosMaximos) {
-        return rejectWithValue("Este cupón ha alcanzado el máximo de usos");
-      }
+      const ruleError = couponRuleError(coupon);
+      if (ruleError) return rejectWithValue(ruleError);
       return { couponCode: coupon.codigo, discount: calcDiscount(coupon, subtotal) };
     }
 
     // --- Rama mock ---
     const coupon = coupons.find((c) => c.codigo === code.toUpperCase());
     if (!coupon) return rejectWithValue("Cupón no encontrado");
-    if (!coupon.activo) return rejectWithValue("Este cupón no está activo");
-    if (new Date(coupon.fechaVencimiento) < new Date()) return rejectWithValue("Este cupón ha vencido");
-    if (coupon.usosActuales >= coupon.usosMaximos) {
-      return rejectWithValue("Este cupón ha alcanzado el máximo de usos");
-    }
+    const ruleError = couponRuleError(coupon);
+    if (ruleError) return rejectWithValue(ruleError);
     return { couponCode: code.toUpperCase(), discount: calcDiscount(coupon, subtotal) };
   }
 );
@@ -102,7 +106,7 @@ export const loadCart = createAsyncThunk("cart/loadCart", async (_, { getState, 
 export const addItemToCart = createAsyncThunk(
   "cart/addItemToCart",
   async ({ product, quantity = 1 }, { getState, dispatch }) => {
-    if (getState().auth.user?.rol === "ADMIN") {
+    if (selectIsAdmin(getState())) {
       throw new Error("Los administradores no pueden realizar compras");
     }
     if (isLocalCart(getState())) {
@@ -149,73 +153,77 @@ const line = (product, quantity) => ({
   marca: product.marca,
   nombreCategoria: product.nombreCategoria,
   visual: product.visual,
+  imagenUrl: product.imagenUrl,
   cantidad: quantity,
   precioReferencial: product.precio,
   subtotal: product.precio * quantity,
   estadoCarrito: "ABIERTO"
 });
+
 const slice = createSlice({
   name: "cart",
   initialState,
   reducers: {
     // Reemplaza el carrito completo con la respuesta del backend.
-    setCart: (s, a) => {
-      const { cart, products = [] } = a.payload;
+    setCart: (state, action) => {
+      const { cart, products = [] } = action.payload;
       const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
-      s.id = cart.id;
-      s.estadoCarrito = cart.estadoCarrito;
-      s.detalles = (cart.detalles || []).map((d) => mapDetalle(d, productsById));
+      state.id = cart.id;
+      state.estadoCarrito = cart.estadoCarrito;
+      state.detalles = (cart.detalles || []).map((d) => mapDetalle(d, productsById));
     },
-    addToCart: (s, a) => {
-      const { product, quantity = 1 } = a.payload;
-      const item = s.detalles.find((d) => d.idProducto === product.id);
+    addToCart: (state, action) => {
+      const { product, quantity = 1 } = action.payload;
+      const item = state.detalles.find((d) => d.idProducto === product.id);
       if (item) {
         item.cantidad += quantity;
         item.subtotal = item.cantidad * item.precioReferencial;
-      } else s.detalles.push(line(product, quantity));
+      } else state.detalles.push(line(product, quantity));
     },
-    updateQuantity: (s, a) => {
-      const item = s.detalles.find((d) => d.idProducto === a.payload.idProducto);
+    updateQuantity: (state, action) => {
+      const item = state.detalles.find((d) => d.idProducto === action.payload.idProducto);
       if (item) {
-        item.cantidad = Math.max(1, a.payload.quantity);
+        item.cantidad = Math.max(1, action.payload.quantity);
         item.subtotal = item.cantidad * item.precioReferencial;
       }
     },
-    removeFromCart: (s, a) => {
-      s.detalles = s.detalles.filter((d) => d.idProducto !== a.payload);
+    removeFromCart: (state, action) => {
+      state.detalles = state.detalles.filter((d) => d.idProducto !== action.payload);
     },
-    setCouponCode: (s, a) => {
-      s.couponCode = a.payload;
+    setCouponCode: (state, action) => {
+      state.couponCode = action.payload;
     },
-    setShippingCost: (s, a) => {
-      s.shippingCost = a.payload;
+    setShippingCost: (state, action) => {
+      state.shippingCost = action.payload;
     },
-    clearCart: (s) => {
-      s.id = null;
-      s.detalles = [];
-      s.couponCode = "";
-      s.discount = 0;
-      s.shippingCost = 1500;
-      s.couponError = null;
+    clearCart: (state) => {
+      state.id = null;
+      state.detalles = [];
+      state.couponCode = "";
+      state.discount = 0;
+      state.shippingCost = 1500;
+      state.couponError = null;
     },
-    setDiscount: (s, a) => {
-      s.discount = a.payload;
-      s.couponError = null;
+    setDiscount: (state, action) => {
+      state.discount = action.payload;
+      state.couponError = null;
     }
   },
-  extraReducers: (b) =>
-    b
-      .addCase(validateCoupon.fulfilled, (s, a) => {
-        s.couponCode = a.payload.couponCode;
-        s.discount = a.payload.discount;
-        s.couponError = null;
+  extraReducers: (builder) => {
+    builder
+      .addCase(validateCoupon.fulfilled, (state, action) => {
+        state.couponCode = action.payload.couponCode;
+        state.discount = action.payload.discount;
+        state.couponError = null;
       })
-      .addCase(validateCoupon.rejected, (s, a) => {
-        s.couponError = a.payload;
-        s.discount = 0;
-        s.couponCode = "";
-      })
+      .addCase(validateCoupon.rejected, (state, action) => {
+        state.couponError = action.payload;
+        state.discount = 0;
+        state.couponCode = "";
+      });
+  }
 });
+
 export const selectCartSubtotal = (state) => state.cart.detalles.reduce((t, i) => t + i.subtotal, 0);
 export const selectCartCount = (state) => state.cart.detalles.reduce((t, i) => t + i.cantidad, 0);
 export const selectCartTotal = (state) => selectCartSubtotal(state) + state.cart.shippingCost - state.cart.discount;

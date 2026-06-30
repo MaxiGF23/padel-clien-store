@@ -3,6 +3,8 @@ import { checkoutWithCard } from "@/services/checkoutService.js";
 import { usingMocks } from "@/services/apiClient.js";
 import * as direccionService from "@/services/direccionService.js";
 import { loadCart, selectCartTotal } from "@/features/cart/cartSlice.js";
+import { STATUS, addAsyncCases } from "@/utils/asyncStatus.js";
+import { selectIsAdmin } from "@/features/auth/authSlice.js";
 
 // Resuelve el idDireccion real que necesita la pasarela: usa la primera dirección
 // del usuario, o crea una a partir del formulario de checkout si no tiene ninguna.
@@ -25,33 +27,33 @@ async function resolveIdDireccion(state) {
 }
 const initialState = {
   address: {
-    nombre: "Lionel",
-    apellido: "Messi",
-    calle: "Av. Corrientes",
-    numero: "1234",
-    ciudad: "Buenos Aires",
-    provincia: "CABA",
-    codigoPostal: "1414",
+    nombre: "",
+    apellido: "",
+    calle: "",
+    numero: "",
+    ciudad: "",
+    provincia: "",
+    codigoPostal: "",
     referencia: "",
     tipoDireccion: "CASA"
   },
   shippingMethod: "ENVIO_DOMICILIO",
   paymentMethod: "TARJETA_CREDITO",
   card: {
-    numeroTarjeta: "4111 1111 1111 1111",
-    titularTarjeta: "Lionel Messi",
-    vencimiento: "12/28",
-    cvv: "123",
+    numeroTarjeta: "",
+    titularTarjeta: "",
+    vencimiento: "",
+    cvv: "",
     cuotas: "1"
   },
-  status: "idle",
+  status: STATUS.IDLE,
   result: null,
   error: null
 };
 export const submitCheckout = createAsyncThunk("checkout/submitCheckout", async (_, { getState, dispatch }) => {
   const state = getState();
 
-  if (state.auth?.user?.rol === "ADMIN") {
+  if (selectIsAdmin(state)) {
     throw new Error("Los administradores no pueden realizar compras");
   }
 
@@ -109,35 +111,29 @@ const slice = createSlice({
   name: "checkout",
   initialState,
   reducers: {
-    updateAddress: (s, a) => {
-      s.address = { ...s.address, ...a.payload };
+    updateAddress: (state, action) => {
+      state.address = { ...state.address, ...action.payload };
     },
-    setShippingMethod: (s, a) => {
-      s.shippingMethod = a.payload;
+    setShippingMethod: (state, action) => {
+      state.shippingMethod = action.payload;
     },
-    setPaymentMethod: (s, a) => {
-      s.paymentMethod = a.payload;
+    setPaymentMethod: (state, action) => {
+      state.paymentMethod = action.payload;
     },
-    updateCard: (s, a) => {
-      s.card = { ...s.card, ...a.payload };
+    updateCard: (state, action) => {
+      state.card = { ...state.card, ...action.payload };
     },
-    resetCheckout: (s) => {
-      Object.assign(s, initialState);
+    resetCheckout: (state) => {
+      Object.assign(state, initialState);
     }
   },
-  extraReducers: (b) =>
-    b
-      .addCase(submitCheckout.pending, (s) => {
-        s.status = "loading";
-      })
-      .addCase(submitCheckout.fulfilled, (s, a) => {
-        s.status = "succeeded";
-        s.result = a.payload;
-      })
-      .addCase(submitCheckout.rejected, (s, a) => {
-        s.status = "failed";
-        s.error = a.error.message;
-      })
+  extraReducers: (builder) => {
+    addAsyncCases(builder, submitCheckout, {
+      fulfilled: (state, action) => {
+        state.result = action.payload;
+      }
+    });
+  }
 });
 export const { updateAddress, setShippingMethod, setPaymentMethod, updateCard, resetCheckout } = slice.actions;
 export default slice.reducer;

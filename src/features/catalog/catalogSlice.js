@@ -1,12 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { getCategories, getProductById, getProducts } from "@/services/catalogService.js";
+import { STATUS, addAsyncCases } from "@/utils/asyncStatus.js";
 
 const initialState = {
   products: [],
   categories: [],
   selectedProduct: null,
   filters: { search: "", category: "Todos los productos", brands: [], sort: "featured" },
-  status: "idle",
+  status: STATUS.IDLE,
   error: null
 };
 export const fetchCatalog = createAsyncThunk("catalog/fetchCatalog", async (_, { getState }) => {
@@ -19,38 +20,33 @@ const slice = createSlice({
   name: "catalog",
   initialState,
   reducers: {
-    setSearch: (s, a) => {
-      s.filters.search = a.payload;
+    setSearch: (state, action) => {
+      state.filters.search = action.payload;
     },
-    setCategory: (s, a) => {
-      s.filters.category = a.payload;
+    setCategory: (state, action) => {
+      state.filters.category = action.payload;
     },
-    setSort: (s, a) => {
-      s.filters.sort = a.payload;
+    setSort: (state, action) => {
+      state.filters.sort = action.payload;
     },
-    toggleBrand: (s, a) => {
-      s.filters.brands = s.filters.brands.includes(a.payload)
-        ? s.filters.brands.filter((b) => b !== a.payload)
-        : [...s.filters.brands, a.payload];
+    toggleBrand: (state, action) => {
+      const brand = action.payload;
+      state.filters.brands = state.filters.brands.includes(brand)
+        ? state.filters.brands.filter((b) => b !== brand)
+        : [...state.filters.brands, brand];
     }
   },
-  extraReducers: (b) =>
-    b
-      .addCase(fetchCatalog.pending, (s) => {
-        s.status = "loading";
-      })
-      .addCase(fetchCatalog.fulfilled, (s, a) => {
-        s.status = "succeeded";
-        s.products = a.payload.products;
-        s.categories = a.payload.categories;
-      })
-      .addCase(fetchCatalog.rejected, (s, a) => {
-        s.status = "failed";
-        s.error = a.error.message;
-      })
-      .addCase(fetchProduct.fulfilled, (s, a) => {
-        s.selectedProduct = a.payload;
-      })
+  extraReducers: (builder) => {
+    addAsyncCases(builder, fetchCatalog, {
+      fulfilled: (state, action) => {
+        state.products = action.payload.products;
+        state.categories = action.payload.categories;
+      }
+    });
+    builder.addCase(fetchProduct.fulfilled, (state, action) => {
+      state.selectedProduct = action.payload;
+    });
+  }
 });
 export const { setSearch, setCategory, setSort, toggleBrand } = slice.actions;
 export default slice.reducer;

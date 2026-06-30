@@ -2,7 +2,7 @@ import { CircleUserRound, LogOut, Search, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "@/features/auth/authSlice.js";
+import { logout, selectIsAdmin } from "@/features/auth/authSlice.js";
 import { clearCart, loadCart, selectCartCount } from "@/features/cart/cartSlice.js";
 import { setSearch } from "@/features/catalog/catalogSlice.js";
 
@@ -13,7 +13,7 @@ export function Layout() {
   const search = useSelector((state) => state.catalog.filters.search);
   const user = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
-  const isAdmin = user?.rol === "ADMIN";
+  const isAdmin = useSelector(selectIsAdmin);
   const [authNotice, setAuthNotice] = useState("");
 
   useEffect(() => {

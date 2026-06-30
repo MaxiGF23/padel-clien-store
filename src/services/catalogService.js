@@ -1,13 +1,22 @@
 import { normalizeText } from "@/utils/formatters.js";
 import { request, usingMocks } from "./apiClient.js";
+import { fetchProductImage } from "./productImageService.js";
 import * as adminService from "./adminService.js";
+
+// Agrega la imagen (data URL) traída del backend a los productos que tengan una.
+async function withImage(product) {
+  if (!product?.tieneImagen || product.imagenUrl) return product;
+  const imagenUrl = await fetchProductImage(product.id);
+  return imagenUrl ? { ...product, imagenUrl } : product;
+}
 
 export async function getProducts(filters = {}) {
   // Traemos el catálogo completo (del backend o de los mocks) y aplicamos el mismo
   // pipeline de filtrado/orden en ambos casos. El backend solo soporta filtros
   // limitados (y "Todos los productos" no es una categoría real), así que filtrar
   // en el front mantiene coherente la búsqueda, marcas múltiples, orden y el "ver todo".
-  const products = usingMocks() ? adminService.getMockData().products : await request("/productos");
+  const raw = usingMocks() ? adminService.getMockData().products : await request("/productos");
+  const products = await Promise.all(raw.map(withImage));
   const search = normalizeText(filters.search);
   return products
     .filter((p) => !search || normalizeText(`${p.nombreProducto} ${p.marca}`).includes(search))
@@ -24,7 +33,7 @@ export async function getProducts(filters = {}) {
     );
 }
 export async function getProductById(id) {
-  if (!usingMocks()) return request(`/productos/${id}`);
+  if (!usingMocks()) return withImage(await request(`/productos/${id}`));
   const mockData = adminService.getMockData();
   return mockData.products.find((p) => p.id === Number(id));
 }

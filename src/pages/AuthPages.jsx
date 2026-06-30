@@ -7,19 +7,34 @@ import { Button } from "@/components/Button.jsx";
 import { Alert } from "@/components/ui/Alert.jsx";
 import { Card } from "@/components/ui/Card.jsx";
 import { FormField } from "@/components/ui/FormField.jsx";
+import { emailError, phoneError, EMAIL_PATTERN, PHONE_PATTERN } from "@/utils/validators.js";
+import { STATUS } from "@/utils/asyncStatus.js";
+
+// Ejemplos mostrados como placeholder en el registro (los campos arrancan vacios).
+const REGISTER_PLACEHOLDERS = {
+  nombre: "Lionel",
+  apellido: "Messi",
+  username: "messi",
+  email: "messi@example.com",
+  telefono: "1199999999",
+  password: "Tu contrasena"
+};
 
 export function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { status, error } = useSelector((state) => state.auth);
-  const [form, setForm] = useState({ email: "admin@example.com", password: "password" });
+  const [form, setForm] = useState({ email: "", password: "" });
 
   async function handleSubmit(event) {
     event.preventDefault();
     const result = await dispatch(loginUser(form));
     if (loginUser.fulfilled.match(result)) {
+      dispatch(showToast({ type: "success", message: "Sesion iniciada con exito" }));
       navigate(location.state?.from || "/");
+    } else {
+      dispatch(showToast({ type: "error", message: result.error?.message || "No pudimos iniciar sesion" }));
     }
   }
 
@@ -33,12 +48,14 @@ export function LoginPage() {
 
         <FormField
           label="Email o usuario"
+          placeholder="admin@example.com"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
         <FormField
           label="Contrasena"
           type="password"
+          placeholder="Tu contrasena"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
@@ -47,11 +64,11 @@ export function LoginPage() {
           Olvidaste tu contrasena?
         </Link>
 
-        {status === "loading" && <Alert tone="loading">Validando credenciales...</Alert>}
-        {status === "failed" && <Alert tone="error">No pudimos iniciar sesion. {error}</Alert>}
+        {status === STATUS.LOADING && <Alert tone="loading">Validando credenciales...</Alert>}
+        {status === STATUS.FAILED && <Alert tone="error">No pudimos iniciar sesion. {error}</Alert>}
 
-        <Button className="w-full" disabled={status === "loading"}>
-          {status === "loading" ? "Ingresando..." : "Ingresar"}
+        <Button className="w-full" disabled={status === STATUS.LOADING}>
+          {status === STATUS.LOADING ? "Ingresando..." : "Ingresar"}
         </Button>
         <p className="text-center text-sm text-neutral-500">
           No tenes cuenta?{" "}
@@ -69,17 +86,25 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const { status, error } = useSelector((state) => state.auth);
   const [accepted, setAccepted] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
-    username: "messi",
-    email: "messi@example.com",
-    telefono: "1199999999",
-    password: "",
-    nombre: "Lionel",
-    apellido: "Messi"
+    nombre: "",
+    apellido: "",
+    username: "",
+    email: "",
+    telefono: "",
+    password: ""
   });
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const fieldErrors = {
+      email: emailError(form.email),
+      telefono: phoneError(form.telefono)
+    };
+    const activeErrors = Object.fromEntries(Object.entries(fieldErrors).filter(([, message]) => message));
+    setErrors(activeErrors);
+    if (Object.keys(activeErrors).length > 0) return;
     const result = await dispatch(registerUser(form));
     if (registerUser.fulfilled.match(result)) {
       // El registro no devuelve token: iniciamos sesión automáticamente para obtenerlo
@@ -87,13 +112,15 @@ export function RegisterPage() {
       const loginResult = await dispatch(loginUser({ email: form.email, password: form.password }));
       if (loginUser.fulfilled.match(loginResult)) {
         dispatch(
-          showToast({ type: "success", message: `Cuenta creada con exito. Bienvenido, ${result.payload.nombre}!` })
+          showToast({ type: "success", message: `Cuenta creada con exito. Bienvenido!` })
         );
         navigate("/");
       } else {
         dispatch(showToast({ type: "success", message: "Cuenta creada. Inicia sesion para continuar." }));
         navigate("/login");
       }
+    } else {
+      dispatch(showToast({ type: "error", message: result.error?.message || "No pudimos crear la cuenta" }));
     }
   }
 
@@ -105,14 +132,20 @@ export function RegisterPage() {
           <p className="mt-2 text-sm text-neutral-500">Sumate a la comunidad PadelStore</p>
         </div>
 
-        {["username", "email", "telefono", "password"].map((field) => (
+        {["nombre", "apellido", "username", "email", "telefono", "password"].map((field) => (
           <FormField
             key={field}
             capitalize
             label={field}
             type={field === "password" ? "password" : "text"}
+            placeholder={REGISTER_PLACEHOLDERS[field]}
             value={form[field]}
-            onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+            error={errors[field]}
+            pattern={field === "email" ? EMAIL_PATTERN : field === "telefono" ? PHONE_PATTERN : undefined}
+            onChange={(e) => {
+              setForm({ ...form, [field]: e.target.value });
+              if (errors[field]) setErrors({ ...errors, [field]: undefined });
+            }}
           />
         ))}
 
@@ -126,11 +159,11 @@ export function RegisterPage() {
           Acepto los terminos y condiciones
         </label>
 
-        {status === "loading" && <Alert tone="loading">Creando cuenta...</Alert>}
-        {status === "failed" && <Alert tone="error">No pudimos crear la cuenta. {error}</Alert>}
+        {status === STATUS.LOADING && <Alert tone="loading">Creando cuenta...</Alert>}
+        {status === STATUS.FAILED && <Alert tone="error">No pudimos crear la cuenta. {error}</Alert>}
 
-        <Button className="w-full" disabled={!accepted || status === "loading"}>
-          {status === "loading" ? "Creando..." : "Crear cuenta"}
+        <Button className="w-full" disabled={!accepted || status === STATUS.LOADING}>
+          {status === STATUS.LOADING ? "Creando..." : "Crear cuenta"}
         </Button>
       </form>
     </AuthShell>
