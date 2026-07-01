@@ -432,7 +432,7 @@ function OrdersTable({ orders, compact = false, onView, onStatus, onCancel }) {
           {orders.map((order) => (
             <tr key={order.id} className="border-t border-line">
               <Td>#{order.id}</Td>
-              <Td>Usuario #{order.idUsuario}</Td>
+              <Td>{order.cliente ? `${order.cliente.nombre} ${order.cliente.apellido}` : `Usuario #${order.idUsuario}`}</Td>
               <Td>{formatMoney(order.total)}</Td>
               <Td>
                 {onStatus ? (
@@ -685,9 +685,40 @@ function UserForm({ user, saving, onClose, onSubmit }) {
 }
 
 function OrderDetail({ order, onClose }) {
+  const { cliente, direccion } = order;
   return (
     <AdminModal title={`Pedido #${order.id}`} onClose={onClose}>
       <div className="space-y-3 text-sm">
+        <div className="rounded border border-line bg-paper p-3">
+          <p className="mb-1 text-[10px] font-extrabold uppercase text-neutral-500">Cliente</p>
+          {cliente ? (
+            <>
+              <p className="font-semibold">
+                {cliente.nombre} {cliente.apellido}
+              </p>
+              {cliente.email && <p className="text-neutral-600">{cliente.email}</p>}
+              {cliente.telefono && <p className="text-neutral-600">{cliente.telefono}</p>}
+            </>
+          ) : (
+            <p className="text-neutral-600">Usuario #{order.idUsuario}</p>
+          )}
+        </div>
+        <div className="rounded border border-line bg-paper p-3">
+          <p className="mb-1 text-[10px] font-extrabold uppercase text-neutral-500">Direccion de envio</p>
+          {direccion ? (
+            <>
+              <p className="font-semibold">
+                {direccion.calle} {direccion.numero}
+              </p>
+              <p className="text-neutral-600">
+                {[direccion.ciudad, direccion.provincia, direccion.codigoPostal].filter(Boolean).join(", ")}
+              </p>
+              {direccion.referencia && <p className="text-neutral-600">Ref: {direccion.referencia}</p>}
+            </>
+          ) : (
+            <p className="text-neutral-600">Direccion #{order.idDireccion}</p>
+          )}
+        </div>
         <p>
           <strong>Metodo:</strong> {order.metodoEnvio}
         </p>

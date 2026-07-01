@@ -1,4 +1,4 @@
-import { CircleUserRound, LogOut, Search, ShoppingCart } from "lucide-react";
+import { LogOut, Search, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -84,7 +84,6 @@ export function Layout() {
                   Ingresar
                 </NavLink>
               )}
-              <CircleUserRound size={18} className="hidden text-neutral-500 sm:block" />
               {!isAdmin && (
                 <NavLink to="/carrito" className="relative rounded p-1 hover:bg-paper" aria-label="Carrito">
                   <ShoppingCart size={18} />

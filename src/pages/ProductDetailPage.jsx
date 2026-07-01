@@ -48,6 +48,8 @@ export function ProductDetailPage() {
     ? [{ imagenUrl: product.imagenUrl, nombreProducto: product.nombreProducto }]
     : [product.visual || "🏓", "🟡", "📐", "🎯"].map((visual) => ({ visual }));
   const hasCarousel = gallery.length > 1;
+  // stock null/undefined = sin control de stock (no bloquea); 0 o menos = agotado.
+  const outOfStock = product.stock != null && Number(product.stock) <= 0;
   const activeIndex = Math.min(activeImage, gallery.length - 1);
   const goTo = (index) => setActiveImage((index + gallery.length) % gallery.length);
   async function handleBuyNow() {
@@ -114,8 +116,12 @@ export function ProductDetailPage() {
           <Text variant="title" className="mt-2">
             {product.nombreProducto}
           </Text>
-          <p className="mt-3 inline-flex rounded bg-mint px-2 py-1 text-xs font-bold text-forest">
-            En stock · {product.stock} disponibles
+          <p
+            className={`mt-3 inline-flex rounded px-2 py-1 text-xs font-bold ${
+              outOfStock ? "bg-red-50 text-red-700" : "bg-mint text-forest"
+            }`}
+          >
+            {outOfStock ? "Sin stock" : `En stock · ${product.stock} disponibles`}
           </p>
           <p className="mt-6 text-3xl font-extrabold text-forest">{formatMoney(product.precio)}</p>
           <p className="mt-1 text-xs text-neutral-500">Hasta 6 cuotas sin interes con tarjeta de credito</p>
@@ -128,8 +134,10 @@ export function ProductDetailPage() {
                 <QuantityStepper value={quantity} onChange={setQuantity} />
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <Button onClick={() => addToCart(product, quantity)}>Agregar al carrito</Button>
-                <Button variant="secondary" onClick={handleBuyNow}>
+                <Button disabled={outOfStock} onClick={() => addToCart(product, quantity)}>
+                  {outOfStock ? "Sin stock" : "Agregar al carrito"}
+                </Button>
+                <Button variant="secondary" disabled={outOfStock} onClick={handleBuyNow}>
                   Comprar ahora
                 </Button>
               </div>

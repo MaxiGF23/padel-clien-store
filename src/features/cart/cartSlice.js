@@ -10,6 +10,9 @@ const initialState = {
   estadoCarrito: "ABIERTO",
   detalles: [],
   couponCode: "",
+  // Cupón aplicado ({ tipoDescuento, descuento }) para poder recalcular el descuento
+  // cada vez que cambia el carrito; null cuando no hay ninguno.
+  appliedCoupon: null,
   shippingCost: 1500,
   discount: 0,
   couponError: null
@@ -20,6 +23,20 @@ function calcDiscount(coupon, subtotal) {
   if (coupon.tipoDescuento === "PORCENTAJE") return Math.floor(subtotal * (coupon.descuento / 100));
   if (coupon.tipoDescuento === "MONTO_FIJO") return coupon.descuento;
   return 0;
+}
+
+const subtotalOf = (detalles) => detalles.reduce((t, i) => t + i.subtotal, 0);
+
+// Recalcula el descuento contra el subtotal actual. Se llama después de cualquier cambio
+// en los items para que el descuento (sobre todo el porcentual) y el total siempre
+// coincidan. El descuento nunca supera el subtotal (así el total no queda negativo).
+function recalcDiscount(state) {
+  if (!state.appliedCoupon) {
+    state.discount = 0;
+    return;
+  }
+  const subtotal = subtotalOf(state.detalles);
+  state.discount = Math.min(calcDiscount(state.appliedCoupon, subtotal), subtotal);
 }
 
 // Reglas de negocio de un cupón (activo / vigente / con usos disponibles). Compartidas
@@ -55,9 +72,7 @@ function mapDetalle(d, productsById) {
 // --- Thunks de validación de cupón (rama mock o backend según el flag) ---
 export const validateCoupon = createAsyncThunk(
   "cart/validateCoupon",
-  async (code, { getState, rejectWithValue }) => {
-    const subtotal = selectCartSubtotal(getState());
-
+  async (code, { rejectWithValue }) => {
     if (!code || code.trim() === "") {
       return rejectWithValue("Ingresa un código de cupón");
     }
@@ -71,7 +86,7 @@ export const validateCoupon = createAsyncThunk(
       }
       const ruleError = couponRuleError(coupon);
       if (ruleError) return rejectWithValue(ruleError);
-      return { couponCode: coupon.codigo, discount: calcDiscount(coupon, subtotal) };
+      return { couponCode: coupon.codigo, coupon: { tipoDescuento: coupon.tipoDescuento, descuento: coupon.descuento } };
     }
 
     // --- Rama mock ---
@@ -79,7 +94,7 @@ export const validateCoupon = createAsyncThunk(
     if (!coupon) return rejectWithValue("Cupón no encontrado");
     const ruleError = couponRuleError(coupon);
     if (ruleError) return rejectWithValue(ruleError);
-    return { couponCode: code.toUpperCase(), discount: calcDiscount(coupon, subtotal) };
+    return { couponCode: code.toUpperCase(), coupon: { tipoDescuento: coupon.tipoDescuento, descuento: coupon.descuento } };
   }
 );
 
@@ -171,6 +186,7 @@ const slice = createSlice({
       state.id = cart.id;
       state.estadoCarrito = cart.estadoCarrito;
       state.detalles = (cart.detalles || []).map((d) => mapDetalle(d, productsById));
+      recalcDiscount(state);
     },
     addToCart: (state, action) => {
       const { product, quantity = 1 } = action.payload;
@@ -179,6 +195,7 @@ const slice = createSlice({
         item.cantidad += quantity;
         item.subtotal = item.cantidad * item.precioReferencial;
       } else state.detalles.push(line(product, quantity));
+      recalcDiscount(state);
     },
     updateQuantity: (state, action) => {
       const item = state.detalles.find((d) => d.idProducto === action.payload.idProducto);
@@ -186,9 +203,11 @@ const slice = createSlice({
         item.cantidad = Math.max(1, action.payload.quantity);
         item.subtotal = item.cantidad * item.precioReferencial;
       }
+      recalcDiscount(state);
     },
     removeFromCart: (state, action) => {
       state.detalles = state.detalles.filter((d) => d.idProducto !== action.payload);
+      recalcDiscount(state);
     },
     setCouponCode: (state, action) => {
       state.couponCode = action.payload;
@@ -200,6 +219,7 @@ const slice = createSlice({
       state.id = null;
       state.detalles = [];
       state.couponCode = "";
+      state.appliedCoupon = null;
       state.discount = 0;
       state.shippingCost = 1500;
       state.couponError = null;
@@ -213,11 +233,13 @@ const slice = createSlice({
     builder
       .addCase(validateCoupon.fulfilled, (state, action) => {
         state.couponCode = action.payload.couponCode;
-        state.discount = action.payload.discount;
+        state.appliedCoupon = action.payload.coupon;
+        recalcDiscount(state);
         state.couponError = null;
       })
       .addCase(validateCoupon.rejected, (state, action) => {
         state.couponError = action.payload;
+        state.appliedCoupon = null;
         state.discount = 0;
         state.couponCode = "";
       });

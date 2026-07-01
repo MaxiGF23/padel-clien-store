@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchOrders } from "@/features/orders/ordersSlice.js";
+import { STATUS } from "@/utils/asyncStatus.js";
 import { orderStatusLabel, orderStatusTone } from "@/features/orders/statusConfig.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
@@ -13,15 +16,28 @@ import { Text } from "@/components/ui/Text.jsx";
 
 export function OrderDetailPage() {
   const { id } = useParams();
-  const { items } = useSelector((s) => s.orders);
+  const dispatch = useDispatch();
+  const user = useSelector((s) => s.auth.user);
+  const { items, status } = useSelector((s) => s.orders);
+
+  // Al recargar la página directa (F5) el store arranca vacío: si todavía no se
+  // cargaron los pedidos, los pedimos acá para no mostrar "no encontrado" de más.
+  useEffect(() => {
+    if (user?.id && status === STATUS.IDLE) dispatch(fetchOrders(user.id));
+  }, [dispatch, user, status]);
 
   const order = items.find((o) => o.id === Number(id));
 
   if (!order) {
+    const loading = status === STATUS.IDLE || status === STATUS.LOADING;
     return (
       <Container>
         <Card className="p-8">
-          <EmptyState message="Pedido no encontrado" action={<Button to="/pedidos">Volver a mis pedidos</Button>} />
+          {loading ? (
+            <EmptyState message="Cargando pedido..." />
+          ) : (
+            <EmptyState message="Pedido no encontrado" action={<Button to="/pedidos">Volver a mis pedidos</Button>} />
+          )}
         </Card>
       </Container>
     );
@@ -29,6 +45,10 @@ export function OrderDetailPage() {
 
   const subtotal = order.detalles.reduce((sum, item) => sum + item.subtotal, 0);
   const discount = order.descuentoAplicado || 0;
+  // El pedido sólo persiste el total final, no el costo de envío. Lo derivamos del total
+  // para que el resumen siempre cuadre (subtotal + envío − descuento = total), sin importar
+  // el método elegido (estándar 1500, express 3200, retiro 0).
+  const shipping = Math.max(0, order.total - subtotal + discount);
 
   return (
     <Container>
@@ -90,12 +110,7 @@ export function OrderDetailPage() {
           <Text variant="section" className="mb-5">
             Resumen del pedido
           </Text>
-          <SummaryRows
-            subtotal={subtotal}
-            shipping={order.metodoEnvio === "RETIRO_TIENDA" ? 0 : 1500}
-            discount={discount}
-            total={order.total}
-          />
+          <SummaryRows subtotal={subtotal} shipping={shipping} discount={discount} total={order.total} />
 
           {order.codigoCupon && (
             <div className="mt-4 rounded bg-mint p-3 text-xs">

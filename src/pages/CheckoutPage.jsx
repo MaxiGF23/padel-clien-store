@@ -1,4 +1,5 @@
 import { Check, CreditCard, Info, Landmark, Loader2, Wallet } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { clearCart, selectCartSubtotal, selectCartTotal, setShippingCost } from "@/features/cart/cartSlice.js";
@@ -12,7 +13,7 @@ import {
 } from "@/features/checkout/checkoutSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { STATUS } from "@/utils/asyncStatus.js";
-import { cardFieldError } from "@/utils/validators.js";
+import { addressFieldError, cardFieldError } from "@/utils/validators.js";
 import { formatMoney } from "@/utils/formatters.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductVisual } from "@/components/ProductVisual.jsx";
@@ -54,8 +55,10 @@ const paymentOptions = [
 // no repetir los regex de la tarjeta. Devuelve la lista de mensajes de error.
 function validateForm(checkout) {
   const errors = [];
-  const missing = ADDRESS_FIELDS.filter((field) => !checkout.address[field]?.trim());
-  if (missing.length > 0) errors.push(`Completa la direccion de envio: ${missing.join(", ")}`);
+  ADDRESS_FIELDS.forEach((field) => {
+    const error = addressFieldError(field, checkout.address[field]);
+    if (error) errors.push(error);
+  });
   if (checkout.paymentMethod === "TARJETA_CREDITO") {
     CARD_FIELDS.forEach((field) => {
       const error = cardFieldError(field, checkout.card[field]);
@@ -73,7 +76,18 @@ export function CheckoutPage() {
     subtotal = useSelector(selectCartSubtotal),
     total = useSelector(selectCartTotal);
 
-  const isOrderConfirmed = checkout.result?.aprobado;
+  // La confirmación se muestra sólo si se concretó una compra EN ESTA visita. No podemos
+  // derivarla de checkout.result (persiste en Redux): si salías por el navbar sin tocar los
+  // botones de la confirmación, quedaba seteado y al volver a /checkout entrabas directo a
+  // la pantalla de éxito aunque tuvieras items nuevos en el carrito.
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  // Una vez que el usuario intenta enviar, mostramos los errores inline (subrayado rojo)
+  // en cada campo, además de los toasts. Los errores se recalculan en vivo desde el valor.
+  const [showErrors, setShowErrors] = useState(false);
+  // Snapshot del resumen al confirmar: el carrito se vacía apenas se aprueba el pago
+  // (para que no quede "comprable" de nuevo), así que guardamos los importes para
+  // poder mostrarlos en la pantalla de confirmación.
+  const [confirmedSummary, setConfirmedSummary] = useState(null);
 
   // Limpia el carrito y el checkout al salir de la pantalla de confirmacion.
   function leaveConfirmation(to) {
@@ -86,7 +100,10 @@ export function CheckoutPage() {
     e.preventDefault();
     const errors = validateForm(checkout);
     if (errors.length > 0) {
-      errors.forEach((message) => dispatch(showToast({ type: "error", message })));
+      // Los campos ya se marcan en rojo (showErrors): mostramos un solo toast resumen
+      // en vez de uno por error, para no spamear notificaciones.
+      setShowErrors(true);
+      dispatch(showToast({ type: "error", message: "Revisá los campos marcados en rojo" }));
       return;
     }
     const result = await dispatch(submitCheckout());
@@ -96,18 +113,25 @@ export function CheckoutPage() {
       // La pasarela respondio 200 pero rechazo el pago (ej. tarjeta invalida por Luhn).
       dispatch(showToast({ type: "error", message: result.payload.mensaje || "El pago fue rechazado" }));
     } else {
+      // Pedido aprobado: vaciamos el carrito acá mismo para que no se pueda volver a
+      // comprar lo mismo (antes solo se limpiaba al tocar los botones de la confirmación,
+      // y salir por el navbar dejaba el carrito con los productos ya pagados).
+      setConfirmedSummary({ subtotal, shipping: cart.shippingCost, discount: cart.discount });
+      setOrderPlaced(true);
+      dispatch(clearCart());
       dispatch(showToast({ type: "success", message: `Pago aprobado · Pedido #${result.payload.pedidoId}` }));
     }
   }
 
-  if (isOrderConfirmed) {
+  if (orderPlaced) {
+    const summary = confirmedSummary || { subtotal, shipping: cart.shippingCost, discount: cart.discount };
     return (
       <section className="mx-auto max-w-6xl px-4 py-7 md:px-6">
         <OrderConfirmation
           result={checkout.result}
-          subtotal={subtotal}
-          shipping={cart.shippingCost}
-          discount={cart.discount}
+          subtotal={summary.subtotal}
+          shipping={summary.shipping}
+          discount={summary.discount}
           onLeave={leaveConfirmation}
         />
       </section>
@@ -121,6 +145,7 @@ export function CheckoutPage() {
         <div className="space-y-6">
           <ShippingAddressForm
             address={checkout.address}
+            showErrors={showErrors}
             onChange={(field, value) => dispatch(updateAddress({ [field]: value }))}
           />
           <ShippingMethodPicker
@@ -133,6 +158,7 @@ export function CheckoutPage() {
           <PaymentSection
             method={checkout.paymentMethod}
             card={checkout.card}
+            showErrors={showErrors}
             onMethodChange={(id) => dispatch(setPaymentMethod(id))}
             onCardChange={(field, value) => dispatch(updateCard({ [field]: value }))}
           />
@@ -164,7 +190,7 @@ function CheckoutSteps() {
   );
 }
 
-function ShippingAddressForm({ address, onChange }) {
+function ShippingAddressForm({ address, showErrors, onChange }) {
   return (
     <Card as="section" className="p-5">
       <h1 className="mb-5 text-lg font-extrabold">Direccion de envio</h1>
@@ -176,6 +202,7 @@ function ShippingAddressForm({ address, onChange }) {
             label={field}
             placeholder={ADDRESS_PLACEHOLDERS[field]}
             value={address[field] || ""}
+            error={addressFieldError(field, address[field], { allowEmpty: !showErrors })}
             onChange={(e) => onChange(field, e.target.value)}
           />
         ))}
@@ -216,7 +243,7 @@ function ShippingMethodPicker({ selected, onSelect }) {
   );
 }
 
-function PaymentSection({ method, card, onMethodChange, onCardChange }) {
+function PaymentSection({ method, card, showErrors, onMethodChange, onCardChange }) {
   return (
     <Card as="section" className="p-5">
       <h2 className="mb-4 text-lg font-extrabold">Medio de pago</h2>
@@ -241,7 +268,7 @@ function PaymentSection({ method, card, onMethodChange, onCardChange }) {
               label={field}
               placeholder={CARD_PLACEHOLDERS[field]}
               value={card[field]}
-              error={cardFieldError(field, card[field], { allowEmpty: true })}
+              error={cardFieldError(field, card[field], { allowEmpty: !showErrors })}
               onChange={(e) => onCardChange(field, e.target.value)}
             />
           ))}

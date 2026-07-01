@@ -17,6 +17,10 @@ export function OrdersPage() {
   useEffect(() => {
     if (user?.id) dispatch(fetchOrders(user.id));
   }, [dispatch, user]);
+  // Mostramos el pedido más reciente primero (por fecha; con el id como desempate).
+  const sortedItems = [...items].sort(
+    (a, b) => new Date(b.fechaPedido) - new Date(a.fechaPedido) || b.id - a.id
+  );
   return (
     <Container>
       <Text variant="title">Mis pedidos</Text>
@@ -26,7 +30,7 @@ export function OrdersPage() {
       <div className="mt-6">
         <AsyncSection status={status} error={error} loadingMessage="Cargando tus pedidos...">
           <div className="space-y-4">
-            {items.map((order) => (
+            {sortedItems.map((order) => (
               <Card as="article" key={order.id} className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">

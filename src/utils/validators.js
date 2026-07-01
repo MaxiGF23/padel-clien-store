@@ -24,6 +24,40 @@ export function phoneError(value) {
   return PHONE_REGEX.test(trimmed) ? "" : "Ingresa un telefono valido (8 a 15 digitos)";
 }
 
+// --- Direccion de envio (checkout) ---
+// Nombres/lugares: solo letras (con acentos), espacios y . ' - (sin numeros).
+const NAME_REGEX = /^[A-Za-zÀ-ÿ'’.\- ]+$/;
+// Calle: letras/numeros y algunos signos, pero debe contener al menos una letra
+// (para que "1234" solo no cuente como nombre de calle).
+const STREET_REGEX = /^[A-Za-zÀ-ÿ0-9'’.\-# ]+$/;
+// Altura: numerica, con sufijo opcional (ej: "1234", "1234 B", "1234 bis").
+const STREET_NUMBER_REGEX = /^\d{1,6}([ -]?[A-Za-zÀ-ÿ0-9]{1,5})?$/;
+// Codigo postal argentino: 4 digitos (viejo) o CPA "C1425AAB" (letra + 4 digitos + 3 letras).
+const POSTAL_CODE_REGEX = /^([A-Za-z]\d{4}[A-Za-z]{3}|\d{4})$/;
+
+// Validacion por campo de la direccion. Devuelve el mensaje de error o "" si es valido.
+// Con `allowEmpty` (validacion en vivo) un campo vacio no es error todavia.
+export function addressFieldError(field, value, { allowEmpty = false } = {}) {
+  const v = (value || "").trim();
+  if (v === "") return allowEmpty ? "" : "Este campo es obligatorio";
+  switch (field) {
+    case "nombre":
+    case "apellido":
+    case "ciudad":
+    case "provincia":
+      return NAME_REGEX.test(v) ? "" : "Solo letras (sin numeros)";
+    case "calle":
+      if (!/[A-Za-zÀ-ÿ]/.test(v)) return "Ingresa un nombre de calle valido";
+      return STREET_REGEX.test(v) ? "" : "Caracteres no validos";
+    case "numero":
+      return STREET_NUMBER_REGEX.test(v) ? "" : "Altura invalida (ej: 1234)";
+    case "codigoPostal":
+      return POSTAL_CODE_REGEX.test(v) ? "" : "CP invalido (ej: 1425 o C1425AAB)";
+    default:
+      return "";
+  }
+}
+
 // --- Tarjeta de credito (checkout) ---
 export const CARD_NUMBER_REGEX = /^\d{16}$/; // 16 digitos, sin espacios
 export const EXPIRY_REGEX = /^\d{2}\/\d{2}$/; // MM/AA

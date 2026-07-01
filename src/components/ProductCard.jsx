@@ -9,6 +9,8 @@ import { ProductVisual } from "./ProductVisual.jsx";
 export function ProductCard({ product }) {
   const isAdmin = useSelector(selectIsAdmin);
   const addToCart = useAddToCart();
+  // stock null/undefined = producto sin control de stock (no lo bloqueamos); 0 = agotado.
+  const outOfStock = product.stock != null && Number(product.stock) <= 0;
   return (
     <Card as="article" className="overflow-hidden">
       <Link to={`/productos/${product.id}`} className="block">
@@ -21,8 +23,8 @@ export function ProductCard({ product }) {
         </Link>
         <p className="text-lg font-extrabold text-forest">{formatMoney(product.precio)}</p>
         {!isAdmin && (
-          <Button size="sm" className="w-full" onClick={() => addToCart(product, 1)}>
-            Agregar al carrito
+          <Button size="sm" className="w-full" disabled={outOfStock} onClick={() => addToCart(product, 1)}>
+            {outOfStock ? "Sin stock" : "Agregar al carrito"}
           </Button>
         )}
       </div>

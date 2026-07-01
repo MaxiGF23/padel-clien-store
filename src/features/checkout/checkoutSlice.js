@@ -2,7 +2,8 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { checkoutWithCard } from "@/services/checkoutService.js";
 import { usingMocks } from "@/services/apiClient.js";
 import * as direccionService from "@/services/direccionService.js";
-import { loadCart, selectCartTotal } from "@/features/cart/cartSlice.js";
+import * as cartService from "@/services/cartService.js";
+import { setCart, selectCartTotal } from "@/features/cart/cartSlice.js";
 import { STATUS, addAsyncCases } from "@/utils/asyncStatus.js";
 import { selectIsAdmin } from "@/features/auth/authSlice.js";
 
@@ -78,34 +79,36 @@ export const submitCheckout = createAsyncThunk("checkout/submitCheckout", async 
   }
 
   // --- Rama backend: la pasarela ficticia factura desde el carrito persistido ---
-  if (state.checkout.paymentMethod !== "TARJETA_CREDITO") {
-    throw new Error("La integración con el backend procesa pagos con tarjeta. Elegí 'Tarjeta' para continuar.");
-  }
-
-  // Aseguramos tener el idCarrito real del usuario logueado.
-  let idCarrito = state.cart.id;
-  if (!idCarrito) {
-    await dispatch(loadCart()).unwrap();
-    idCarrito = getState().cart.id;
-  }
+  // Re-sincronizamos el carrito con el backend (fetch puro, sin fusionar) para no mandar
+  // un idCarrito viejo ya vaciado por una compra anterior ni revivir items ya comprados.
+  const freshCart = await cartService.getMyCart();
+  dispatch(setCart({ cart: freshCart, products: getState().catalog.products }));
+  const idCarrito = getState().cart.id;
   if (!idCarrito || getState().cart.detalles.length === 0) {
     throw new Error("Tu carrito está vacío");
   }
 
   const idDireccion = await resolveIdDireccion(getState());
+  const metodoPago = state.checkout.paymentMethod;
 
   // El backend calcula el total desde el carrito en la BD (no se manda desde el front).
-  return checkoutWithCard({
+  // Los datos de tarjeta solo se envían cuando el medio de pago es con tarjeta;
+  // transferencia y efectivo crean el pedido sin pasar por la validación de la pasarela.
+  const payload = {
     idCarrito,
     idDireccion,
     metodoEnvio: state.checkout.shippingMethod,
+    medioPago: metodoPago,
     observaciones: state.checkout.address.referencia || "",
-    codigoCupon: state.cart.couponCode || undefined,
-    numeroTarjeta: state.checkout.card.numeroTarjeta.replace(/\s/g, ""),
-    titularTarjeta: state.checkout.card.titularTarjeta,
-    vencimiento: state.checkout.card.vencimiento,
-    cvv: state.checkout.card.cvv
-  });
+    codigoCupon: state.cart.couponCode || undefined
+  };
+  if (metodoPago === "TARJETA_CREDITO") {
+    payload.numeroTarjeta = state.checkout.card.numeroTarjeta.replace(/\s/g, "");
+    payload.titularTarjeta = state.checkout.card.titularTarjeta;
+    payload.vencimiento = state.checkout.card.vencimiento;
+    payload.cvv = state.checkout.card.cvv;
+  }
+  return checkoutWithCard(payload);
 });
 const slice = createSlice({
   name: "checkout",
