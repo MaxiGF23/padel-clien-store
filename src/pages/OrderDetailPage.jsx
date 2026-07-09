@@ -19,6 +19,7 @@ export function OrderDetailPage() {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user);
   const { items, status } = useSelector((s) => s.orders);
+  const products = useSelector((s) => s.catalog.products);
 
   // Al recargar la página directa (F5) el store arranca vacío: si todavía no se
   // cargaron los pedidos, los pedimos acá para no mostrar "no encontrado" de más.
@@ -42,6 +43,12 @@ export function OrderDetailPage() {
       </Container>
     );
   }
+
+  // Mapa id -> imagenUrl desde el catálogo para mostrar imágenes en los detalles
+  // del pedido sin que el backend tenga que devolverlas en cada respuesta.
+  const imageById = Object.fromEntries(
+    products.filter((p) => p.imagenUrl).map((p) => [p.id, p.imagenUrl])
+  );
 
   const subtotal = order.detalles.reduce((sum, item) => sum + item.subtotal, 0);
   const discount = order.descuentoAplicado || 0;
@@ -71,7 +78,7 @@ export function OrderDetailPage() {
             <div className="space-y-4">
               {order.detalles.map((item) => (
                 <div key={item.id} className="grid grid-cols-[48px_1fr_auto] gap-3 border-b border-line pb-4 last:border-b-0">
-                  <ProductVisual product={item} size="sm" />
+                  <ProductVisual product={{ ...item, imagenUrl: imageById[item.idProducto] }} size="sm" />
                   <div>
                     <p className="text-sm font-bold">{item.nombreProducto}</p>
                     <p className="text-xs text-neutral-500">Cantidad: {item.cantidad}</p>

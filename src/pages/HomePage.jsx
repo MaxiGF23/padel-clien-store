@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCatalog, setCategory, setSort, toggleBrand } from "@/features/catalog/catalogSlice.js";
+import { fetchCatalog, selectFilteredProducts, setCategory, setSort, toggleBrand } from "@/features/catalog/catalogSlice.js";
 import { Button } from "@/components/Button.jsx";
 import { ProductCard } from "@/components/ProductCard.jsx";
 import { AsyncSection } from "@/components/ui/AsyncSection.jsx";
@@ -10,18 +10,20 @@ import { Text } from "@/components/ui/Text.jsx";
 const brands = ["Bullpadel", "Head", "Dunlop", "Wilson", "Adidas"];
 export function HomePage() {
   const dispatch = useDispatch();
-  const { products, categories, filters, status, error } = useSelector((s) => s.catalog);
+  const { categories, filters, status, error } = useSelector((s) => s.catalog);
+  // La lista visible se deriva en el cliente (búsqueda/categoría/marca/orden) sin refetch.
+  const products = useSelector(selectFilteredProducts);
 
-  // Refetch al montar y cada vez que cambian los filtros (sincroniza con cambios del admin).
+  // Traemos el catálogo solo al montar la página (no en cada cambio de filtro).
   useEffect(() => {
     dispatch(fetchCatalog());
-  }, [dispatch, filters.category, filters.brands, filters.sort, filters.search]);
+  }, [dispatch]);
   return (
     <>
       <section className="bg-forest px-6 py-14 text-center text-white">
         <Text variant="title">Tu juego, tu equipamiento</Text>
         <p className="mt-2 text-sm text-white/80">Las mejores marcas de padel · Envio a todo el pais</p>
-        <Button variant="secondary" className="mt-6 h-9 bg-white text-forest">
+        <Button variant="secondary" className="mt-6 h-9 bg-white text-forest" onClick={() => dispatch(setCategory("Todos los productos"))}>
           Ver catalogo completo
         </Button>
       </section>

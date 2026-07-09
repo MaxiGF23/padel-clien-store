@@ -1,9 +1,7 @@
 import { BarChart3, Boxes, FolderTree, LogOut, PackageCheck, Tags, Users, Home } from "lucide-react";
-import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice.js";
-import { fetchAdminData } from "@/features/admin/adminSlice.js";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: BarChart3, end: true },
@@ -18,10 +16,6 @@ export function AdminLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-
-  useEffect(() => {
-    dispatch(fetchAdminData());
-  }, [dispatch]);
 
   function handleLogout() {
     dispatch(logout());

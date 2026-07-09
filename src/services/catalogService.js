@@ -1,4 +1,3 @@
-import { normalizeText } from "@/utils/formatters.js";
 import { request, usingMocks } from "./apiClient.js";
 import { fetchProductImage } from "./productImageService.js";
 import * as adminService from "./adminService.js";
@@ -10,27 +9,12 @@ async function withImage(product) {
   return imagenUrl ? { ...product, imagenUrl } : product;
 }
 
-export async function getProducts(filters = {}) {
-  // Traemos el catálogo completo (del backend o de los mocks) y aplicamos el mismo
-  // pipeline de filtrado/orden en ambos casos. El backend solo soporta filtros
-  // limitados (y "Todos los productos" no es una categoría real), así que filtrar
-  // en el front mantiene coherente la búsqueda, marcas múltiples, orden y el "ver todo".
+// Trae el catálogo completo (con imágenes) UNA sola vez. El filtrado, la búsqueda
+// y el orden se resuelven en el cliente con un selector (ver selectFilteredProducts
+// en catalogSlice), así no hace falta volver a pedir el catálogo en cada cambio de filtro.
+export async function getProducts() {
   const raw = usingMocks() ? adminService.getMockData().products : await request("/productos");
-  const products = await Promise.all(raw.map(withImage));
-  const search = normalizeText(filters.search);
-  return products
-    .filter((p) => !search || normalizeText(`${p.nombreProducto} ${p.marca}`).includes(search))
-    .filter(
-      (p) => filters.category === "Todos los productos" || !filters.category || p.nombreCategoria === filters.category
-    )
-    .filter((p) => !filters.brands?.length || filters.brands.includes(p.marca))
-    .sort((a, b) =>
-      filters.sort === "price-asc"
-        ? a.precio - b.precio
-        : filters.sort === "price-desc"
-          ? b.precio - a.precio
-          : a.id - b.id
-    );
+  return Promise.all(raw.map(withImage));
 }
 export async function getProductById(id) {
   if (!usingMocks()) return withImage(await request(`/productos/${id}`));

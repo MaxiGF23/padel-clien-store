@@ -1,5 +1,5 @@
 import { Edit, Eye, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AdminButton, AdminModal, AdminTable, Field, StatusBadge } from "@/components/admin/AdminPrimitives.jsx";
 import { inputClass } from "@/components/ui/Input.jsx";
@@ -15,7 +15,11 @@ import {
   saveCoupon,
   saveProduct,
   saveUser,
-  fetchAdminData
+  fetchAdminProducts,
+  fetchAdminCategories,
+  fetchAdminCoupons,
+  fetchAdminOrders,
+  fetchAdminUsers
 } from "@/features/admin/adminSlice.js";
 import { formatDate, formatMoney } from "@/utils/formatters.js";
 import { emailError, phoneError, EMAIL_PATTERN, PHONE_PATTERN } from "@/utils/validators.js";
@@ -28,15 +32,14 @@ import { Card } from "@/components/ui/Card.jsx";
 const orderStatuses = ["PENDIENTE", "CONFIRMADO", "EN_PROCESO", "ENVIADO", "ENTREGADO", "CANCELADO"];
 const roleOptions = ["USER", "ADMIN"];
 
-// Despacha una accion del admin, muestra un toast segun el resultado y, si fue exitosa,
-// ejecuta el callback (cerrar modal, etc.) y refresca los datos. Centraliza el feedback
-// para que cada submit/accion del panel notifique al usuario.
+// Despacha una accion del admin y muestra un toast segun el resultado. No re-fetchea:
+// cada thunk de mutacion (save/remove/change) ya actualiza su slice con upsert/filter,
+// asi que el estado queda consistente sin volver a bajar todos los datos del panel.
 async function withToast(dispatch, action, successMessage, onSuccess) {
   const result = await dispatch(action);
   if (result.meta.requestStatus === "fulfilled") {
     dispatch(showToast({ type: "success", message: successMessage }));
     onSuccess?.();
-    dispatch(fetchAdminData());
   } else {
     dispatch(showToast({ type: "error", message: result.error?.message || "No se pudo completar la operacion" }));
   }
@@ -44,7 +47,14 @@ async function withToast(dispatch, action, successMessage, onSuccess) {
 }
 
 export function AdminDashboardPage() {
+  const dispatch = useDispatch();
   const { products, orders, users } = useSelector((state) => state.admin);
+  // El dashboard resume productos, pedidos y usuarios: pedimos solo esos tres.
+  useEffect(() => {
+    dispatch(fetchAdminProducts());
+    dispatch(fetchAdminOrders());
+    dispatch(fetchAdminUsers());
+  }, [dispatch]);
   const todayKey = new Date().toDateString();
   const todayOrders = orders.filter((order) => new Date(order.fechaPedido).toDateString() === todayKey);
   const metrics = [
@@ -85,6 +95,11 @@ export function AdminProductsPage() {
   const dispatch = useDispatch();
   const { products, categories, saving } = useSelector((state) => state.admin);
   const [editing, setEditing] = useState(null);
+  // Productos para la tabla y categorias para el selector del formulario.
+  useEffect(() => {
+    dispatch(fetchAdminProducts());
+    dispatch(fetchAdminCategories());
+  }, [dispatch]);
 
   return (
     <AdminPage
@@ -163,6 +178,11 @@ export function AdminProductsPage() {
 export function AdminCategoriesPage() {
   const dispatch = useDispatch();
   const { categories, products, saving } = useSelector((state) => state.admin);
+  // Categorias (tabla) y productos (para contar cuantos hay por categoria).
+  useEffect(() => {
+    dispatch(fetchAdminCategories());
+    dispatch(fetchAdminProducts());
+  }, [dispatch]);
   const [editing, setEditing] = useState(null);
   const productCounts = useMemo(
     () =>
@@ -237,6 +257,10 @@ export function AdminCategoriesPage() {
 export function AdminCouponsPage() {
   const dispatch = useDispatch();
   const { coupons, saving } = useSelector((state) => state.admin);
+  // Esta pantalla solo usa cupones.
+  useEffect(() => {
+    dispatch(fetchAdminCoupons());
+  }, [dispatch]);
   const [creating, setCreating] = useState(false);
 
   return (
@@ -303,6 +327,10 @@ export function AdminCouponsPage() {
 export function AdminOrdersPage() {
   const dispatch = useDispatch();
   const { orders } = useSelector((state) => state.admin);
+  // Esta pantalla solo usa pedidos.
+  useEffect(() => {
+    dispatch(fetchAdminOrders());
+  }, [dispatch]);
   const [viewing, setViewing] = useState(null);
 
   return (
@@ -321,6 +349,10 @@ export function AdminOrdersPage() {
 export function AdminUsersPage() {
   const dispatch = useDispatch();
   const { users, saving } = useSelector((state) => state.admin);
+  // Esta pantalla solo usa usuarios.
+  useEffect(() => {
+    dispatch(fetchAdminUsers());
+  }, [dispatch]);
   const [editing, setEditing] = useState(null);
 
   return (

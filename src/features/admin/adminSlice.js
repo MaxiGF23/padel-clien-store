@@ -13,7 +13,12 @@ const initialState = {
   error: null
 };
 
-export const fetchAdminData = createAsyncThunk("admin/fetchAdminData", () => adminService.getAdminData());
+// Fetch por entidad: cada pantalla del panel pide solo lo que necesita (no todo el admin).
+export const fetchAdminProducts = createAsyncThunk("admin/fetchProducts", () => adminService.getAdminProducts());
+export const fetchAdminCategories = createAsyncThunk("admin/fetchCategories", () => adminService.getAdminCategories());
+export const fetchAdminCoupons = createAsyncThunk("admin/fetchCoupons", () => adminService.getAdminCoupons());
+export const fetchAdminOrders = createAsyncThunk("admin/fetchOrders", () => adminService.getAdminOrders());
+export const fetchAdminUsers = createAsyncThunk("admin/fetchUsers", () => adminService.getAdminUsers());
 export const saveProduct = createAsyncThunk("admin/saveProduct", ({ id, payload }) =>
   id ? adminService.updateProduct(id, payload) : adminService.createProduct(payload)
 );
@@ -53,17 +58,20 @@ const slice = createSlice({
   reducers: {},
   extraReducers: (builder) =>
     builder
-      .addCase(fetchAdminData.pending, (state) => {
-        state.status = STATUS.LOADING;
-        state.error = null;
+      .addCase(fetchAdminProducts.fulfilled, (state, action) => {
+        state.products = action.payload;
       })
-      .addCase(fetchAdminData.fulfilled, (state, action) => {
-        state.status = STATUS.SUCCEEDED;
-        Object.assign(state, action.payload);
+      .addCase(fetchAdminCategories.fulfilled, (state, action) => {
+        state.categories = action.payload;
       })
-      .addCase(fetchAdminData.rejected, (state, action) => {
-        state.status = STATUS.FAILED;
-        state.error = action.error.message;
+      .addCase(fetchAdminCoupons.fulfilled, (state, action) => {
+        state.coupons = action.payload;
+      })
+      .addCase(fetchAdminOrders.fulfilled, (state, action) => {
+        state.orders = action.payload;
+      })
+      .addCase(fetchAdminUsers.fulfilled, (state, action) => {
+        state.users = action.payload;
       })
       .addCase(saveProduct.fulfilled, (state, action) => {
         state.products = upsert(state.products, action.payload);
@@ -100,18 +108,43 @@ const slice = createSlice({
       .addCase(removeUser.fulfilled, (state, action) => {
         state.users = state.users.filter((item) => item.id !== Number(action.payload));
       })
+      // Estado de carga de los fetch (por entidad): controlan `status`.
+      .addMatcher(
+        (action) => action.type.startsWith("admin/fetch") && action.type.endsWith("/pending"),
+        (state) => {
+          state.status = STATUS.LOADING;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.startsWith("admin/fetch") && action.type.endsWith("/fulfilled"),
+        (state) => {
+          state.status = STATUS.SUCCEEDED;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.startsWith("admin/fetch") && action.type.endsWith("/rejected"),
+        (state, action) => {
+          state.status = STATUS.FAILED;
+          state.error = action.error.message;
+        }
+      )
+      // Estado de las mutaciones (crear/editar/borrar): controlan `saving`.
       .addMatcher(
         (action) =>
           action.type.startsWith("admin/") &&
-          action.type.endsWith("/pending") &&
-          action.type !== fetchAdminData.pending.type,
+          !action.type.startsWith("admin/fetch") &&
+          action.type.endsWith("/pending"),
         (state) => {
           state.saving = STATUS.LOADING;
           state.error = null;
         }
       )
       .addMatcher(
-        (action) => action.type.startsWith("admin/") && action.type.endsWith("/rejected"),
+        (action) =>
+          action.type.startsWith("admin/") &&
+          !action.type.startsWith("admin/fetch") &&
+          action.type.endsWith("/rejected"),
         (state, action) => {
           state.saving = STATUS.FAILED;
           state.error = action.error.message;
@@ -120,8 +153,8 @@ const slice = createSlice({
       .addMatcher(
         (action) =>
           action.type.startsWith("admin/") &&
-          action.type.endsWith("/fulfilled") &&
-          action.type !== fetchAdminData.fulfilled.type,
+          !action.type.startsWith("admin/fetch") &&
+          action.type.endsWith("/fulfilled"),
         (state) => {
           state.saving = STATUS.IDLE;
           state.error = null;
