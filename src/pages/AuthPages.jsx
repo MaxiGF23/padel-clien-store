@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser, registerUser } from "@/features/auth/authSlice.js";
 import { showToast } from "@/features/ui/toastSlice.js";
 import { Button } from "@/components/Button.jsx";
+import { Logo } from "@/components/Logo.jsx";
 import { Alert } from "@/components/ui/Alert.jsx";
 import { Card } from "@/components/ui/Card.jsx";
 import { FormField } from "@/components/ui/FormField.jsx";
@@ -43,7 +44,7 @@ export function LoginPage() {
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div>
           <h1 className="text-2xl font-extrabold">Inicia sesion</h1>
-          <p className="mt-2 text-sm text-neutral-500">Ingresa a tu cuenta para seguir comprando</p>
+          <p className="mt-2 text-sm text-neutral-500">Accedé para equipar y abastecer tu club</p>
         </div>
 
         <FormField
@@ -129,7 +130,7 @@ export function RegisterPage() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <h1 className="text-2xl font-extrabold">Crear cuenta</h1>
-          <p className="mt-2 text-sm text-neutral-500">Sumate a la comunidad PadelStore</p>
+          <p className="mt-2 text-sm text-neutral-500">Abrí cuenta y equipá tu club de punta a punta</p>
         </div>
 
         {["nombre", "apellido", "username", "email", "telefono", "password"].map((field) => (
@@ -173,7 +174,12 @@ export function RegisterPage() {
 function AuthShell({ children }) {
   return (
     <section className="flex min-h-[calc(100vh-112px)] items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-sm p-7 shadow-soft">{children}</Card>
+      <Card className="w-full max-w-sm p-7 shadow-soft">
+        <div className="mb-6 flex justify-center">
+          <Logo className="h-10 w-10" />
+        </div>
+        {children}
+      </Card>
     </section>
   );
 }

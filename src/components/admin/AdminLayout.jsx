@@ -2,6 +2,7 @@ import { BarChart3, Boxes, FolderTree, LogOut, PackageCheck, Tags, Users, Home }
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice.js";
+import { Logo } from "@/components/Logo.jsx";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: BarChart3, end: true },
@@ -26,8 +27,8 @@ export function AdminLayout() {
     <div className="min-h-screen bg-fog text-ink">
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-[184px] shrink-0 bg-forest-deep px-4 py-7 text-white md:block">
-          <NavLink to="/" className="block text-sm font-extrabold hover:opacity-80 transition">
-            PadelStore
+          <NavLink to="/" className="inline-flex hover:opacity-80 transition" aria-label="PadelStore">
+            <Logo variant="light" className="h-7 w-7" />
           </NavLink>
           <nav className="mt-8 space-y-2">
             {navItems.map(({ to, label, icon: Icon, end }) => (
@@ -102,7 +103,7 @@ export function AdminLayout() {
 
           <footer className="bg-ink px-4 py-4 text-[11px] text-white/70 md:px-10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <span>© 2026 PadelStore. Todos los derechos reservados.</span>
+              <span>© 2026 PadelStore · Proveedor integral para clubes de pádel</span>
               <div className="flex gap-5">
                 <a href="#" className="hover:text-white">
                   Terminos de Servicio

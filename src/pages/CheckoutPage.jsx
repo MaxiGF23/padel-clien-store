@@ -88,6 +88,9 @@ export function CheckoutPage() {
   // (para que no quede "comprable" de nuevo), así que guardamos los importes para
   // poder mostrarlos en la pantalla de confirmación.
   const [confirmedSummary, setConfirmedSummary] = useState(null);
+ 
+  const [addressForm, setAddressForm] = useState(checkout.address);
+  const [cardForm, setCardForm] = useState(checkout.card);
 
   // Limpia el carrito y el checkout al salir de la pantalla de confirmacion.
   function leaveConfirmation(to) {
@@ -98,7 +101,7 @@ export function CheckoutPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const errors = validateForm(checkout);
+    const errors = validateForm({ ...checkout, address: addressForm, card: cardForm });
     if (errors.length > 0) {
       // Los campos ya se marcan en rojo (showErrors): mostramos un solo toast resumen
       // en vez de uno por error, para no spamear notificaciones.
@@ -106,6 +109,9 @@ export function CheckoutPage() {
       dispatch(showToast({ type: "error", message: "Revisá los campos marcados en rojo" }));
       return;
     }
+    
+    dispatch(updateAddress(addressForm));
+    dispatch(updateCard(cardForm));
     const result = await dispatch(submitCheckout());
     if (submitCheckout.rejected.match(result)) {
       dispatch(showToast({ type: "error", message: result.error.message || "No pudimos procesar el pago" }));
@@ -144,9 +150,9 @@ export function CheckoutPage() {
       <form className="grid gap-6 lg:grid-cols-[1fr_360px]" onSubmit={handleSubmit}>
         <div className="space-y-6">
           <ShippingAddressForm
-            address={checkout.address}
+            address={addressForm}
             showErrors={showErrors}
-            onChange={(field, value) => dispatch(updateAddress({ [field]: value }))}
+            onChange={(field, value) => setAddressForm({ ...addressForm, [field]: value })}
           />
           <ShippingMethodPicker
             selected={checkout.shippingMethod}
@@ -157,10 +163,10 @@ export function CheckoutPage() {
           />
           <PaymentSection
             method={checkout.paymentMethod}
-            card={checkout.card}
+            card={cardForm}
             showErrors={showErrors}
             onMethodChange={(id) => dispatch(setPaymentMethod(id))}
-            onCardChange={(field, value) => dispatch(updateCard({ [field]: value }))}
+            onCardChange={(field, value) => setCardForm({ ...cardForm, [field]: value })}
           />
         </div>
         <OrderSummaryAside
